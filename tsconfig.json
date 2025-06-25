@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "bundler",
+    "strict": true,
+    "paths": {
+      "@funish/basis": ["./packages/basis/src/index.ts"]
+    }
+  }
+}

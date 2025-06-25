@@ -1,0 +1,78 @@
+{
+  "name": "@funish/basis",
+  "version": "0.0.1",
+  "description": "A unified development toolkit with CLI for package management, versioning, publishing, linting, and git hooks management for JavaScript/TypeScript projects.",
+  "main": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "bin": {
+    "basis": "dist/cli.mjs"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./config": {
+      "import": "./dist/config.mjs",
+      "require": "./dist/config.cjs"
+    }
+  },
+  "scripts": {
+    "dev": "unbuild --stub",
+    "prepack": "unbuild"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/funish/basis.git"
+  },
+  "keywords": [
+    "basis",
+    "development-toolkit",
+    "cli",
+    "package-management",
+    "version-management",
+    "npm-publish",
+    "semantic-versioning",
+    "linting",
+    "git-hooks",
+    "typescript",
+    "javascript",
+    "developer-experience",
+    "code-quality",
+    "modern-development",
+    "unjs",
+    "nypm",
+    "semver",
+    "citty",
+    "consola",
+    "c12"
+  ],
+  "author": {
+    "name": "Funish",
+    "email": "official@funish.net",
+    "url": "https://funish.net/"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/funish/basis/issues"
+  },
+  "homepage": "https://github.com/funish/basis#readme",
+  "dependencies": {
+    "c12": "3.0.4",
+    "citty": "0.1.6",
+    "consola": "3.4.2",
+    "micromatch": "4.0.8",
+    "nypm": "0.6.0",
+    "pathe": "2.0.3",
+    "pkg-types": "2.1.0",
+    "semver": "7.7.2"
+  },
+  "devDependencies": {
+    "@types/micromatch": "4.0.9",
+    "@types/semver": "7.7.0"
+  }
+}
