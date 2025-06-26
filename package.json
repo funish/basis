@@ -6,9 +6,8 @@
   "scripts": {
     "build": "pnpm -r prepack",
     "dev": "pnpm -r prepack --stub",
-    "check": "biome check . --write --unsafe",
-    "format": "prettier --write --list-different . --ignore-path .gitignore",
-    "postinstall": "basis githooks install"
+    "lint": "basis lint --project",
+    "postinstall": "pnpm dev && basis git setup"
   },
   "repository": {
     "type": "git",

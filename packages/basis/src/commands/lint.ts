@@ -1,43 +1,109 @@
 import { defineCommand } from "citty";
 import { consola } from "consola";
-import { lintCommitMessage, lintStaged } from "../modules/lint";
+import {
+  lintAll,
+  lintDependencies,
+  lintDocs,
+  lintProject,
+  lintStaged,
+  lintStructure,
+} from "../modules/lint";
 
-export default defineCommand({
+export const lint = defineCommand({
   meta: {
     name: "lint",
-    description: "Run linting",
+    description: "Run comprehensive project linting and quality checks",
   },
   args: {
     staged: {
       type: "boolean",
-      description: "Lint only staged files",
+      description: "Lint only staged files using configured commands",
+      default: false,
     },
-    "commit-msg": {
+    project: {
       type: "boolean",
-      description: "Lint commit message",
+      description: "Run project-wide lint commands",
+      default: false,
+    },
+    deps: {
+      type: "boolean",
+      description: "Check dependencies (outdated, security, blocked packages)",
+      default: false,
+    },
+    structure: {
+      type: "boolean",
+      description:
+        "Check project structure (required files/dirs, naming conventions)",
+      default: false,
+    },
+    docs: {
+      type: "boolean",
+      description: "Check documentation (README, CHANGELOG)",
+      default: false,
+    },
+    all: {
+      type: "boolean",
+      description: "Run all lint checks",
+      default: false,
     },
   },
   async run({ args }) {
-    try {
-      let success = true;
+    const cwd = process.cwd();
+    let success = true;
 
-      // Handle commit message linting
-      if (args["commit-msg"]) {
-        const commitResult = await lintCommitMessage();
-        success = success && commitResult;
+    // If no specific flags are provided, run staged files lint by default
+    if (
+      !args.staged &&
+      !args.project &&
+      !args.deps &&
+      !args.structure &&
+      !args.docs &&
+      !args.all
+    ) {
+      args.staged = true;
+    }
+
+    // Run all checks if --all flag is provided
+    if (args.all) {
+      success = await lintAll(cwd);
+    } else {
+      // Run specific checks based on flags
+      const checks: Array<() => Promise<boolean>> = [];
+
+      if (args.staged) {
+        checks.push(() => lintStaged(cwd));
       }
 
-      // Handle staged files linting (default)
-      if (args.staged || !args["commit-msg"]) {
-        const stagedResult = await lintStaged();
-        success = success && stagedResult;
+      if (args.project) {
+        checks.push(() => lintProject(cwd));
       }
 
-      if (!success) {
-        process.exit(1);
+      if (args.deps) {
+        checks.push(() => lintDependencies(cwd));
       }
-    } catch (error) {
-      consola.error("Lint failed:", error);
+
+      if (args.structure) {
+        checks.push(() => lintStructure(cwd));
+      }
+
+      if (args.docs) {
+        checks.push(() => lintDocs(cwd));
+      }
+
+      // Run all selected checks
+      for (const check of checks) {
+        const result = await check();
+        if (!result) {
+          success = false;
+        }
+      }
+    }
+
+    if (success) {
+      consola.success("✅ All lint checks completed successfully!");
+      process.exit(0);
+    } else {
+      consola.error("❌ Some lint checks failed");
       process.exit(1);
     }
   },

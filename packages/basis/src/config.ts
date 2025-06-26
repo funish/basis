@@ -13,6 +13,24 @@ export function defineBasisConfig(config: BasisConfig): BasisConfig {
 export const defaultConfig: BasisConfig = {
   lint: {
     staged: {},
+    project: {},
+    dependencies: {
+      checkSecurity: true,
+    },
+    structure: {
+      requiredFiles: ["package.json"],
+    },
+    docs: {
+      checkReadme: true,
+    },
+  },
+  git: {
+    hooks: {},
+    config: {
+      core: {
+        autocrlf: "input",
+      },
+    },
     commitMsg: {
       types: [
         "feat",
@@ -27,23 +45,18 @@ export const defaultConfig: BasisConfig = {
         "chore",
         "revert",
       ],
-      maxLength: 72,
-      minLength: 10,
     },
-  },
-  githooks: {
+    autoSetup: true,
     autoInitGit: true,
     skipGitCheck: false,
     force: false,
   },
   packageManager: {
     autoDetect: true,
-    registry: "https://registry.npmjs.org/",
   },
   version: {
     tagPrefix: "v",
     prereleaseId: "edge",
-    commitMessage: "chore: release v{version}",
   },
   publish: {
     defaultTag: "edge",

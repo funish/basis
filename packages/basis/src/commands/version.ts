@@ -1,5 +1,6 @@
 import { defineCommand } from "citty";
 import { consola } from "consola";
+import semver from "semver";
 import { updatePackageVersion } from "../modules/version";
 import type { VersionOptions } from "../types";
 
@@ -9,21 +10,11 @@ export default defineCommand({
     description: "Update package version",
   },
   args: {
-    patch: {
-      type: "boolean",
-      description: "Increment patch version",
-    },
-    minor: {
-      type: "boolean",
-      description: "Increment minor version",
-    },
-    major: {
-      type: "boolean",
-      description: "Increment major version",
-    },
-    prerelease: {
-      type: "boolean",
-      description: "Create prerelease version",
+    version: {
+      type: "positional",
+      description:
+        "Version to set (patch, minor, major, prerelease, or specific version like 1.2.3)",
+      required: false,
     },
     preid: {
       type: "string",
@@ -38,25 +29,45 @@ export default defineCommand({
       description: "Commit message template",
       alias: "m",
     },
-    version: {
-      type: "positional",
-      description: "Specific version to set",
-    },
   },
   async run({ args }) {
     try {
       const cwd = process.cwd();
 
+      // Parse the version argument and prepare options
+      const versionArg = args.version;
       const options: VersionOptions = {
-        version: args.version,
-        patch: args.patch,
-        minor: args.minor,
-        major: args.major,
-        prerelease: args.prerelease,
         preid: args.preid,
         message: args.message,
         tag: args.tag,
       };
+
+      if (versionArg) {
+        // Check if it's a version component or specific version number
+        const versionComponents = ["patch", "minor", "major", "prerelease"];
+
+        if (versionComponents.includes(versionArg)) {
+          // It's a version component to increment
+          options[
+            versionArg as keyof Pick<
+              VersionOptions,
+              "patch" | "minor" | "major" | "prerelease"
+            >
+          ] = true;
+        } else {
+          // Check if it's a valid version number using semver
+          if (semver.valid(versionArg)) {
+            options.version = versionArg;
+          } else {
+            // Invalid input, show help
+            consola.error(`Invalid version argument: ${versionArg}`);
+            consola.info(
+              "Valid options: patch, minor, major, prerelease, or specific version (e.g., 1.2.3)",
+            );
+            process.exit(1);
+          }
+        }
+      }
 
       const result = await updatePackageVersion(cwd, options);
       consola.success(

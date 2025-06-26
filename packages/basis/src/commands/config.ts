@@ -64,28 +64,41 @@ export default defineCommand({
             }
           }
 
-          if (config.lint.commitMsg) {
-            consola.log("  Commit message:");
-            if (config.lint.commitMsg.types) {
-              consola.log(
-                `    Types: ${config.lint.commitMsg.types.join(", ")}`,
-              );
-            }
-            if (config.lint.commitMsg.maxLength) {
-              consola.log(`    Max length: ${config.lint.commitMsg.maxLength}`);
-            }
-            if (config.lint.commitMsg.minLength) {
-              consola.log(`    Min length: ${config.lint.commitMsg.minLength}`);
+          if (config.lint.project) {
+            consola.log("  Project:");
+            for (const [pattern, command] of Object.entries(
+              config.lint.project,
+            )) {
+              consola.log(`    ${pattern}: ${command}`);
             }
           }
         }
 
-        // Hooks configuration
-        if (config.hooks) {
+        // Git configuration
+        if (config.git) {
           consola.log("");
-          consola.log("🪝 Hooks:");
-          for (const [hook, command] of Object.entries(config.hooks)) {
-            consola.log(`    ${hook}: ${command}`);
+          consola.log("🔧 Git:");
+
+          if (config.git.commitMsg) {
+            consola.log("  Commit message:");
+            if (config.git.commitMsg.types) {
+              consola.log(
+                `    Types: ${config.git.commitMsg.types.join(", ")}`,
+              );
+            }
+            if (config.git.commitMsg.maxLength) {
+              consola.log(`    Max length: ${config.git.commitMsg.maxLength}`);
+            }
+            if (config.git.commitMsg.minLength) {
+              consola.log(`    Min length: ${config.git.commitMsg.minLength}`);
+            }
+          }
+
+          if (config.git.hooks) {
+            consola.log("  Hooks:");
+            for (const [hook, command] of Object.entries(config.git.hooks)) {
+              consola.log(`    ${hook}: ${command}`);
+            }
           }
         }
       }

@@ -4,7 +4,7 @@
 
 export interface BasisConfig {
   lint?: LintConfig;
-  githooks?: GitHooksConfig;
+  git?: GitConfig;
   packageManager?: PackageManagerConfig;
   version?: VersionConfig;
   publish?: PublishConfig;
@@ -15,14 +15,201 @@ export interface BasisConfig {
 // ===============================================
 
 export interface LintConfig {
+  // Code quality checks for staged files
   staged?: Record<string, string>;
-  commitMsg?: {
-    types?: string[];
-    maxLength?: number;
-    minLength?: number;
-    scopeRequired?: boolean;
-    allowedScopes?: string[];
+
+  // Project-wide commands (similar to staged but for entire project)
+  project?: Record<string, string>;
+
+  // Dependencies checks
+  dependencies?: {
+    checkOutdated?: boolean;
+    checkSecurity?: boolean;
+    allowedLicenses?: string[];
+    blockedPackages?: string[];
   };
+
+  // Project structure checks
+  structure?: {
+    requiredFiles?: string[];
+    requiredDirs?: string[];
+    naming?: Array<{
+      path: string; // Directory path pattern (glob)
+      files?: string; // File naming pattern (regex)
+      directories?: string; // Directory naming pattern (regex)
+      description?: string; // Rule description
+    }>;
+  };
+
+  // Documentation checks
+  docs?: {
+    checkReadme?: boolean;
+    checkChangelog?: boolean;
+  };
+}
+
+export interface GitConfig {
+  hooks?: Partial<Record<ValidGitHook, string>>;
+
+  // Git configuration with nested structure for better organization
+  config?: {
+    // Core settings
+    core?: {
+      editor?: string;
+      autocrlf?: boolean | "input";
+      eol?: "lf" | "crlf" | "native";
+      ignorecase?: boolean;
+      filemode?: boolean;
+      bare?: boolean;
+      logallrefupdates?: boolean;
+      repositoryformatversion?: number;
+      sharedrepository?: boolean | "group" | "all" | "world" | "everybody";
+      worktree?: string;
+      precomposeunicode?: boolean;
+      protecthfs?: boolean;
+      protectntfs?: boolean;
+    };
+
+    // User identity
+    user?: {
+      name?: string;
+      email?: string;
+      signingkey?: string;
+    };
+
+    // Branch settings
+    init?: {
+      defaultBranch?: string;
+    };
+    branch?: {
+      autosetupmerge?: boolean | "always";
+      autosetuprebase?: "never" | "local" | "remote" | "always";
+    };
+
+    // Push settings
+    push?: {
+      default?: "nothing" | "current" | "upstream" | "simple" | "matching";
+      followTags?: boolean;
+      autoSetupRemote?: boolean;
+    };
+
+    // Pull settings
+    pull?: {
+      rebase?: boolean | "preserve" | "merges" | "interactive";
+      ff?: boolean | "only";
+    };
+
+    // Merge settings
+    merge?: {
+      tool?: string;
+      conflictstyle?: "merge" | "diff3";
+      ff?: boolean | "only";
+      log?: boolean | number;
+    };
+
+    // Rebase settings
+    rebase?: {
+      autoSquash?: boolean;
+      autoStash?: boolean;
+      updateRefs?: boolean;
+    };
+
+    // Fetch settings
+    fetch?: {
+      prune?: boolean;
+      pruneTags?: boolean;
+      fsckobjects?: boolean;
+    };
+
+    // Remote settings
+    remote?: {
+      [remoteName: string]: {
+        url?: string;
+        fetch?: string;
+      };
+    };
+
+    // Diff settings
+    diff?: {
+      tool?: string;
+      algorithm?: "myers" | "minimal" | "patience" | "histogram";
+      renames?: boolean | "copy" | "copies";
+      mnemonicprefix?: boolean;
+    };
+
+    // Status settings
+    status?: {
+      showUntrackedFiles?: "no" | "normal" | "all";
+      branch?: boolean;
+      short?: boolean;
+    };
+
+    // Commit settings
+    commit?: {
+      cleanup?: "strip" | "whitespace" | "verbatim" | "scissors" | "default";
+      gpgsign?: boolean;
+      template?: string;
+      verbose?: boolean;
+    };
+
+    // Log settings
+    log?: {
+      abbrevCommit?: boolean;
+      decorate?: boolean | "short" | "full" | "auto" | "no";
+      showSignature?: boolean;
+    };
+
+    // Security settings
+    transfer?: {
+      fsckobjects?: boolean;
+    };
+    receive?: {
+      fsckObjects?: boolean;
+    };
+
+    // Performance settings
+    gc?: {
+      auto?: number;
+      autopacklimit?: number;
+      autodetach?: boolean;
+    };
+
+    // Aliases
+    alias?: {
+      [aliasName: string]: string;
+    };
+
+    // URL rewriting
+    url?: {
+      [pattern: string]: {
+        insteadOf?: string;
+        pushInsteadOf?: string;
+      };
+    };
+  };
+
+  commitMsg?: CommitMsgConfig;
+  autoSetup?: boolean;
+  autoInitGit?: boolean;
+  skipGitCheck?: boolean;
+  force?: boolean;
+}
+
+export interface CommitMsgConfig {
+  types?: string[];
+  maxLength?: number;
+  minLength?: number;
+  scopeRequired?: boolean;
+  allowedScopes?: string[];
+}
+
+export interface CommitMessage {
+  type: string;
+  scope?: string;
+  description: string;
+  body?: string;
+  footer?: string;
+  isBreaking: boolean;
 }
 
 // Git official hooks from https://git-scm.com/docs/githooks
@@ -59,14 +246,10 @@ export const VALID_GIT_HOOKS = [
 
 export type ValidGitHook = (typeof VALID_GIT_HOOKS)[number];
 
-export interface GitHooksConfig extends Partial<Record<ValidGitHook, string>> {
-  /** Whether to automatically initialize git repository if not found */
-  autoInitGit?: boolean;
-  /** Whether to skip git command availability check */
-  skipGitCheck?: boolean;
-  /** Force operation even if git is not available */
-  force?: boolean;
-}
+// Git configuration data types for ini format
+export type GitConfigValue = string | number | boolean;
+export type GitConfigSection = Record<string, GitConfigValue>;
+export type GitConfigData = Record<string, GitConfigSection>;
 
 export interface PackageManagerConfig {
   /** Preferred package manager (aligned with nypm support) */
@@ -113,19 +296,6 @@ export interface PublishConfig {
   autoGitPush?: boolean;
   /** Create git tag after publish */
   createGitTag?: boolean;
-}
-
-// ===============================================
-// Lint Related Types
-// ===============================================
-
-export interface CommitMessage {
-  type: string;
-  scope?: string;
-  description: string;
-  body?: string;
-  footer?: string;
-  isBreaking: boolean;
 }
 
 // ===============================================

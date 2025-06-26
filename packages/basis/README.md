@@ -135,21 +135,49 @@ basis publish --skip-build --skip-tests
 # Lint staged files
 basis lint --staged
 
-# Validate commit message
-basis lint --commit-msg
+# Run project-wide linting
+basis lint --project
+
+# Check dependencies
+basis lint --deps
+
+# Check project structure
+basis lint --structure
+
+# Check documentation
+basis lint --docs
+
+# Run all lint checks
+basis lint --all
 ```
 
 ### Git Hooks Management
 
 ```bash
-# Install git hooks
-basis githooks install
-basis githooks install --auto-init-git    # Auto-initialize git if needed
-basis githooks install --force            # Force installation
+# Setup git configuration and hooks
+basis git setup
 
-# Manage hooks
-basis githooks uninstall   # Remove git hooks
-basis githooks list        # List configured hooks
+# Setup git configuration only
+basis git config
+
+# Setup git hooks only
+basis git hooks
+
+# Remove git hooks
+basis git remove                         # Remove all basis-managed hooks
+basis git remove pre-commit             # Remove specific hook
+basis git remove --update-config        # Remove hooks AND config from basis.config.ts
+
+# Reset git configuration
+basis git reset                          # Reset config (keep user info)
+basis git reset --no-keep-user          # Reset config (remove user info)
+basis git reset --update-config         # Reset config AND remove from basis.config.ts
+
+# Initialize git repository with basis configuration
+basis git init
+
+# Validate commit message
+basis git lint-commit
 ```
 
 ### Project Management
@@ -188,6 +216,21 @@ export default defineBasisConfig({
       "*.{json,md,yml,yaml}": "prettier --write",
       "*.vue": "vue-tsc --noEmit && eslint --fix",
     },
+    // Project-wide linting commands
+    project: {
+      typecheck: "tsc --noEmit",
+      "format-check": "prettier --check .",
+    },
+  },
+
+  // Git configuration
+  git: {
+    // Hook commands
+    hooks: {
+      "pre-commit": "basis lint --staged",
+      "commit-msg": "basis git lint-commit",
+    },
+
     // Commit message validation
     commitMsg: {
       types: [
@@ -207,13 +250,6 @@ export default defineBasisConfig({
       scopeRequired: false,
       allowedScopes: ["api", "ui", "core"],
     },
-  },
-
-  // Git hooks configuration
-  githooks: {
-    // Hook commands
-    "pre-commit": "basis lint --staged",
-    "commit-msg": "basis lint --commit-msg",
 
     // Options
     autoInitGit: true, // Auto-initialize git repo if not found
@@ -347,7 +383,7 @@ basis add package           # Unified package management
 basis version patch         # Unified version management
 basis publish --tag beta   # Unified publishing
 basis lint --staged        # Unified linting
-basis githooks install     # Unified git hooks
+basis git hooks            # Unified git hooks
 ```
 
 ## API
@@ -377,12 +413,22 @@ await basis.publishPackage({ tag: "beta" });
 
 // Linting
 await basis.lintStaged();
-await basis.lintCommitMessage();
+await basis.lintProject();
+await basis.lintDependencies();
+await basis.lintStructure();
+await basis.lintDocs();
 
-// Git hooks
-await basis.installHooks();
-await basis.uninstallHooks();
-await basis.listHooks();
+// Git management
+await basis.setupGit(); // Setup everything
+await basis.setupGitConfig(); // Setup config only
+await basis.setupGitHooks(); // Setup hooks only
+await basis.removeGitHooks(); // Remove hooks (keep config)
+await basis.removeGitHooks(true); // Remove hooks + config file
+await basis.resetGitConfig(); // Reset config (keep user)
+await basis.resetGitConfig(false); // Reset config (remove all)
+await basis.resetGitConfig(true, true); // Reset + remove from config file
+await basis.initGitRepo(); // Initialize repository
+await basis.lintCommitMessage(); // Validate commit message
 ```
 
 ## License

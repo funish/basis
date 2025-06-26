@@ -16,8 +16,8 @@ async function main() {
     subCommands: {
       init: () => import("./commands/init").then((m) => m.default),
       config: () => import("./commands/config").then((m) => m.default),
-      lint: () => import("./commands/lint").then((m) => m.default),
-      githooks: () => import("./commands/githooks").then((m) => m.default),
+      lint: () => import("./commands/lint").then((m) => m.lint),
+      git: () => import("./commands/git").then((m) => m.git),
       // Package management commands (using nypm)
       install: () => import("./commands/install").then((m) => m.default),
       i: () => import("./commands/install").then((m) => m.default),

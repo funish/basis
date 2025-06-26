@@ -48,19 +48,18 @@ basis/
 │       │   │   ├── version.ts   # Version management (semver)
 │       │   │   ├── publish.ts   # Publishing workflow
 │       │   │   ├── lint.ts      # Linting coordination
-│       │   │   ├── githooks.ts  # Git hooks management
+│       │   │   ├── git.ts       # Git management with subcommands
 │       │   │   ├── init.ts      # Project initialization
 │       │   │   └── config.ts    # Configuration management
 │       │   ├── modules/         # Core business logic
 │       │   │   ├── version.ts   # Version management logic
 │       │   │   ├── publish.ts   # Publishing logic
-│       │   │   ├── githooks.ts  # Git hooks implementation
+│       │   │   ├── git.ts       # Git hooks and config implementation
 │       │   │   ├── lint.ts      # Linting implementation
 │       │   │   └── init.ts      # Initialization logic
 │       │   ├── config.ts        # Configuration system (c12)
 │       │   ├── types.ts         # TypeScript type definitions
 │       │   └── utils.ts         # Shared utilities
-│       ├── templates/           # Configuration templates
 │       ├── package.json         # Package manifest
 │       ├── build.config.ts      # Build configuration (unbuild)
 │       └── README.md            # User documentation
@@ -138,6 +137,8 @@ cd playground
 basis init          # Test initialization
 basis add lodash    # Test package management
 basis version patch # Test versioning
+basis git setup     # Test git configuration
+basis lint --staged # Test linting
 ```
 
 ## Architecture & Design Principles
@@ -262,9 +263,16 @@ This monorepo uses its own basis configuration:
 ```ts
 // basis.config.ts
 export default defineBasisConfig({
-  githooks: {
-    "pre-commit": "basis lint --staged",
-    "commit-msg": "basis lint --commit-msg",
+  git: {
+    hooks: {
+      "pre-commit": "basis lint --staged",
+      "commit-msg": "basis git lint-commit",
+    },
+    config: {
+      core: {
+        autocrlf: "input",
+      },
+    },
     autoInitGit: true,
   },
   lint: {

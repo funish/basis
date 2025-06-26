@@ -27,13 +27,19 @@ importers:
     dependencies:
       c12:
         specifier: 3.0.4
-        version: 3.0.4
+        version: 3.0.4(magicast@0.3.5)
       citty:
         specifier: 0.1.6
         version: 0.1.6
       consola:
         specifier: 3.4.2
         version: 3.4.2
+      ini:
+        specifier: 5.0.0
+        version: 5.0.0
+      magicast:
+        specifier: 0.3.5
+        version: 0.3.5
       micromatch:
         specifier: 4.0.8
         version: 4.0.8
@@ -50,6 +56,9 @@ importers:
         specifier: 7.7.2
         version: 7.7.2
     devDependencies:
+      "@types/ini":
+        specifier: 4.1.1
+        version: 4.1.1
       "@types/micromatch":
         specifier: 4.0.9
         version: 4.0.9
@@ -65,10 +74,32 @@ packages:
       }
     engines: { node: ">=6.9.0" }
 
+  "@babel/helper-string-parser@7.27.1":
+    resolution:
+      {
+        integrity: sha512-qMlSxKbpRlAridDExk92nSobyDdpPijUq2DW6oDnUqd0iOGxmQjyqhMIihI9+zv4LPyZdRje2cavWPbCbWm3eA==,
+      }
+    engines: { node: ">=6.9.0" }
+
   "@babel/helper-validator-identifier@7.27.1":
     resolution:
       {
         integrity: sha512-D2hP9eA+Sqx1kBZgzxZh0y1trbuU+JoDkiEwqhQ36nodYqJwyEIhPSdMNd7lOm/4io72luTPWH20Yda0xOuUow==,
+      }
+    engines: { node: ">=6.9.0" }
+
+  "@babel/parser@7.27.5":
+    resolution:
+      {
+        integrity: sha512-OsQd175SxWkGlzbny8J3K8TnnDD0N3lrIUtB92xwyRpzaenGZhxDvxN/JgU00U3CDZNj9tPuDJ5H0WS4Nt3vKg==,
+      }
+    engines: { node: ">=6.0.0" }
+    hasBin: true
+
+  "@babel/types@7.27.6":
+    resolution:
+      {
+        integrity: sha512-ETyHEk2VHHvl9b9jZP5IHPavHYk57EhanlRRuae9XCpb/j5bDCbPPMOBfCWhnl/7EDJz0jEMCi/RhccCE8r1+Q==,
       }
     engines: { node: ">=6.9.0" }
 
@@ -634,6 +665,12 @@ packages:
         integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==,
       }
 
+  "@types/ini@4.1.1":
+    resolution:
+      {
+        integrity: sha512-MIyNUZipBTbyUNnhvuXJTY7B6qNI78meck9Jbv3wk0OgNwRyOOVEKDutAkOs1snB/tx0FafyR6/SN4Ps0hZPeg==,
+      }
+
   "@types/micromatch@4.0.9":
     resolution:
       {
@@ -1004,6 +1041,13 @@ packages:
         integrity: sha512-Yc+BQe8SvoXH1643Qez1zqLRmbA5rCL+sSmk6TVos0LWVfNIB7PGncdlId77WzLGSIB5KaWgTaNTs2lNVEI6VQ==,
       }
 
+  ini@5.0.0:
+    resolution:
+      {
+        integrity: sha512-+N0ngpO3e7cRUWOJAS7qw0IZIVc6XPrW4MlFBdD066F2L4k1L6ker3hLqSq7iXxU5tgS4WGkIUElWn5vogAEnw==,
+      }
+    engines: { node: ^18.17.0 || >=20.5.0 }
+
   is-core-module@2.16.1:
     resolution:
       {
@@ -1079,6 +1123,12 @@ packages:
     resolution:
       {
         integrity: sha512-sNPKHvyjVf7gyjwS4xGTaW/mCnF8wnjtifKBEhxfZ7E/S8tQ0rssrwGNn6q8JH/ohItJfSQp9mBtQYuTlH5QnA==,
+      }
+
+  magicast@0.3.5:
+    resolution:
+      {
+        integrity: sha512-L0WhttDl+2BOsybvEOLK7fW3UA0OQ0IQ2d6Zl2x/a6vVRs3bAY0ECOSHHeL5jD+SbOpOCUEi0y1DgHEn9Qn1AQ==,
       }
 
   mdn-data@2.0.28:
@@ -1680,8 +1730,18 @@ snapshots:
       picocolors: 1.1.1
     optional: true
 
-  "@babel/helper-validator-identifier@7.27.1":
-    optional: true
+  "@babel/helper-string-parser@7.27.1": {}
+
+  "@babel/helper-validator-identifier@7.27.1": {}
+
+  "@babel/parser@7.27.5":
+    dependencies:
+      "@babel/types": 7.27.6
+
+  "@babel/types@7.27.6":
+    dependencies:
+      "@babel/helper-string-parser": 7.27.1
+      "@babel/helper-validator-identifier": 7.27.1
 
   "@biomejs/biome@2.0.5":
     optionalDependencies:
@@ -1908,6 +1968,8 @@ snapshots:
 
   "@types/estree@1.0.8": {}
 
+  "@types/ini@4.1.1": {}
+
   "@types/micromatch@4.0.9":
     dependencies:
       "@types/braces": 3.0.5
@@ -1945,7 +2007,7 @@ snapshots:
       node-releases: 2.0.19
       update-browserslist-db: 1.1.3(browserslist@4.25.0)
 
-  c12@3.0.4:
+  c12@3.0.4(magicast@0.3.5):
     dependencies:
       chokidar: 4.0.3
       confbox: 0.2.2
@@ -1959,6 +2021,8 @@ snapshots:
       perfect-debounce: 1.0.0
       pkg-types: 2.1.0
       rc9: 2.1.2
+    optionalDependencies:
+      magicast: 0.3.5
 
   caniuse-api@3.0.0:
     dependencies:
@@ -2163,6 +2227,8 @@ snapshots:
 
   hookable@5.5.3: {}
 
+  ini@5.0.0: {}
+
   is-core-module@2.16.1:
     dependencies:
       hasown: 2.0.2
@@ -2193,6 +2259,12 @@ snapshots:
   magic-string@0.30.17:
     dependencies:
       "@jridgewell/sourcemap-codec": 1.5.0
+
+  magicast@0.3.5:
+    dependencies:
+      "@babel/parser": 7.27.5
+      "@babel/types": 7.27.6
+      source-map-js: 1.2.1
 
   mdn-data@2.0.28: {}
 
