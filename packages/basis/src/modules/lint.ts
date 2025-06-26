@@ -1,12 +1,12 @@
 import { execSync } from "node:child_process";
-import { readdir, stat } from "node:fs/promises";
 import { consola } from "consola";
+import fg from "fast-glob";
 import micromatch from "micromatch";
 import { detectPackageManager } from "nypm";
-import { join, resolve } from "pathe";
+import { resolve } from "pathe";
 import { readPackageJSON } from "pkg-types";
 import type { LintConfig } from "../types";
-import { fileExists, loadConfig } from "../utils";
+import { fileExists, getPackageManagerCommands, loadConfig } from "../utils";
 
 /**
  * Get staged files (only existing files, not deleted ones)
@@ -38,54 +38,25 @@ export function getStagedFiles(): string[] {
 }
 
 /**
- * Get all project files based on patterns
+ * Get all project files based on patterns using fast-glob
  */
 export async function getProjectFiles(
   cwd: string,
   patterns: string[] = ["**/*"],
   exclude: string[] = ["node_modules/**", "dist/**", "build/**", ".git/**"],
 ): Promise<string[]> {
-  const allFiles: string[] = [];
-
-  async function scanDirectory(dir: string, depth = 0): Promise<void> {
-    if (depth > 10) return; // Prevent infinite recursion
-
-    try {
-      const entries = await readdir(dir);
-
-      for (const entry of entries) {
-        const fullPath = join(dir, entry);
-        const relativePath = fullPath.replace(`${cwd}/`, "");
-
-        // Skip excluded patterns
-        if (
-          exclude.some((pattern) => micromatch.isMatch(relativePath, pattern))
-        ) {
-          continue;
-        }
-
-        const stats = await stat(fullPath);
-
-        if (stats.isDirectory()) {
-          await scanDirectory(fullPath, depth + 1);
-        } else if (stats.isFile()) {
-          // Check if file matches any include pattern
-          if (
-            patterns.some((pattern) =>
-              micromatch.isMatch(relativePath, pattern),
-            )
-          ) {
-            allFiles.push(relativePath);
-          }
-        }
-      }
-    } catch {
-      // Ignore errors for inaccessible directories
-    }
+  try {
+    return await fg(patterns, {
+      cwd,
+      ignore: exclude,
+      onlyFiles: true,
+      dot: false,
+      absolute: false,
+    });
+  } catch (error) {
+    consola.warn("Failed to scan project files:", error);
+    return [];
   }
-
-  await scanDirectory(cwd);
-  return allFiles;
 }
 
 /**
@@ -150,10 +121,10 @@ export async function lintStaged(
       }
 
       matchedFiles.forEach((file) => processedFiles.add(file));
-      consola.success(`✓ ${pattern}`);
+      consola.success(`${pattern}`);
     } catch (error) {
       hasErrors = true;
-      consola.error(`✗ ${pattern} failed:`, error);
+      consola.error(`${pattern} failed:`, error);
     }
   }
 
@@ -193,10 +164,10 @@ export async function lintProject(
         cwd: cwd,
       });
 
-      consola.success(`✓ ${pattern}`);
+      consola.success(`${pattern}`);
     } catch (error) {
       hasErrors = true;
-      consola.error(`✗ ${pattern} failed:`, error);
+      consola.error(`${pattern} failed:`, error);
     }
   }
 
@@ -239,10 +210,10 @@ export async function lintDependencies(
       );
 
       if (blockedFound.length > 0) {
-        consola.error(`✗ Blocked packages found: ${blockedFound.join(", ")}`);
+        consola.error(`Blocked packages found: ${blockedFound.join(", ")}`);
         hasIssues = true;
       } else {
-        consola.success("✓ No blocked packages found");
+        consola.success("No blocked packages found");
       }
     }
 
@@ -250,7 +221,7 @@ export async function lintDependencies(
     if (depsConfig.checkOutdated) {
       try {
         execSync(commands.outdated, { cwd, stdio: "pipe" });
-        consola.success("✓ All dependencies are up to date");
+        consola.success("All dependencies are up to date");
       } catch (error) {
         consola.warn("⚠ Some dependencies are outdated:", error);
         // Don't mark as error since outdated deps are warnings
@@ -261,9 +232,9 @@ export async function lintDependencies(
     if (depsConfig.checkSecurity) {
       try {
         execSync(commands.audit, { cwd, stdio: "pipe" });
-        consola.success("✓ No security vulnerabilities found");
+        consola.success("No security vulnerabilities found");
       } catch (error) {
-        consola.error("✗ Security vulnerabilities detected:", error);
+        consola.error("Security vulnerabilities detected:", error);
         hasIssues = true;
       }
     }
@@ -305,10 +276,10 @@ export async function lintStructure(
     for (const file of structureConfig.requiredFiles) {
       const filePath = resolve(cwd, file);
       if (!(await fileExists(filePath))) {
-        consola.error(`✗ Required file missing: ${file}`);
+        consola.error(`Required file missing: ${file}`);
         hasIssues = true;
       } else {
-        consola.success(`✓ Required file found: ${file}`);
+        consola.success(`Required file found: ${file}`);
       }
     }
   }
@@ -318,10 +289,10 @@ export async function lintStructure(
     for (const dir of structureConfig.requiredDirs) {
       const dirPath = resolve(cwd, dir);
       if (!(await fileExists(dirPath))) {
-        consola.error(`✗ Required directory missing: ${dir}`);
+        consola.error(`Required directory missing: ${dir}`);
         hasIssues = true;
       } else {
-        consola.success(`✓ Required directory found: ${dir}`);
+        consola.success(`Required directory found: ${dir}`);
       }
     }
   }
@@ -350,12 +321,12 @@ export async function lintStructure(
 
         if (invalidFiles.length > 0) {
           consola.error(
-            `✗ Files with invalid naming in ${pathPattern}: ${invalidFiles.slice(0, 3).join(", ")}${invalidFiles.length > 3 ? "..." : ""}`,
+            `Files with invalid naming in ${pathPattern}: ${invalidFiles.slice(0, 3).join(", ")}${invalidFiles.length > 3 ? "..." : ""}`,
           );
           hasIssues = true;
         } else if (matchingFiles.length > 0) {
           consola.success(
-            `✓ All files in ${pathPattern} follow naming convention`,
+            `All files in ${pathPattern} follow naming convention`,
           );
         }
       }
@@ -377,12 +348,12 @@ export async function lintStructure(
 
         if (invalidDirs.length > 0) {
           consola.error(
-            `✗ Directories with invalid naming in ${pathPattern}: ${invalidDirs.slice(0, 3).join(", ")}`,
+            `Directories with invalid naming in ${pathPattern}: ${invalidDirs.slice(0, 3).join(", ")}`,
           );
           hasIssues = true;
         } else if (dirs.size > 0) {
           consola.success(
-            `✓ All directories in ${pathPattern} follow naming convention`,
+            `All directories in ${pathPattern} follow naming convention`,
           );
         }
       }
@@ -417,10 +388,10 @@ export async function lintDocs(
     );
 
     if (!hasReadme.some((exists) => exists)) {
-      consola.error("✗ No README file found");
+      consola.error("No README file found");
       hasIssues = true;
     } else {
-      consola.success("✓ README file found");
+      consola.success("README file found");
     }
   }
 
@@ -437,10 +408,10 @@ export async function lintDocs(
     );
 
     if (!hasChangelog.some((exists) => exists)) {
-      consola.error("✗ No CHANGELOG file found");
+      consola.error("No CHANGELOG file found");
       hasIssues = true;
     } else {
-      consola.success("✓ CHANGELOG file found");
+      consola.success("CHANGELOG file found");
     }
   }
 
@@ -470,37 +441,9 @@ export async function lintAll(cwd = process.cwd()): Promise<boolean> {
   );
 
   if (failures.length === 0) {
-    consola.success("✅ All lint checks passed!");
+    consola.success("All lint checks passed!");
     return true;
   }
-  consola.error(`❌ ${failures.length} lint check(s) failed`);
+  consola.error(`${failures.length} lint check(s) failed`);
   return false;
-}
-
-/**
- * Get package manager specific commands
- */
-function getPackageManagerCommands(packageManager: string) {
-  switch (packageManager) {
-    case "yarn":
-      return {
-        outdated: "yarn outdated --json",
-        audit: "yarn audit --level moderate",
-      };
-    case "pnpm":
-      return {
-        outdated: "pnpm outdated --format table",
-        audit: "pnpm audit --audit-level moderate",
-      };
-    case "bun":
-      return {
-        outdated: "bun outdated",
-        audit: "bun audit --audit-level moderate",
-      };
-    default: // npm
-      return {
-        outdated: "npm outdated --json",
-        audit: "npm audit --audit-level moderate",
-      };
-  }
 }

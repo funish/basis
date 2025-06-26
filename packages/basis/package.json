@@ -1,6 +1,6 @@
 {
   "name": "@funish/basis",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A unified development toolkit with CLI for package management, versioning, publishing, linting, and git hooks management for JavaScript/TypeScript projects.",
   "main": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -64,6 +64,8 @@
     "c12": "3.0.4",
     "citty": "0.1.6",
     "consola": "3.4.2",
+    "defu": "6.1.4",
+    "fast-glob": "3.3.3",
     "ini": "5.0.0",
     "magicast": "0.3.5",
     "micromatch": "4.0.8",

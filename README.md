@@ -277,7 +277,7 @@ export default defineBasisConfig({
   },
   lint: {
     staged: {
-      "*.{ts,js,json,md}": "biome check --write --unsafe",
+      "*.{ts,js,json}": "pnpm biome check . --write --unsafe",
     },
   },
   packageManager: {

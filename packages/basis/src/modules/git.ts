@@ -1,16 +1,56 @@
 import { execSync } from "node:child_process";
 import { copyFile, readFile, unlink, writeFile } from "node:fs/promises";
+import { updateConfig } from "c12/update";
 import { consola } from "consola";
+import { defu } from "defu";
 import ini from "ini";
-import { generateCode, parseModule } from "magicast";
 import { resolve } from "pathe";
 import type {
+  BasisConfig,
   CommitMessage,
   GitConfig,
   GitConfigData,
   GitConfigSection,
 } from "../types";
 import { fileExists, loadConfig } from "../utils";
+
+/**
+ * Remove git configuration from basis config
+ */
+async function removeGitFromBasisConfig(
+  cwd: string,
+  removeHooks = false,
+  removeConfig = false,
+): Promise<boolean> {
+  try {
+    await updateConfig({
+      cwd,
+      configFile: "basis.config",
+      onUpdate: (config: BasisConfig) => {
+        if (config.git) {
+          if (removeHooks && config.git.hooks) {
+            delete config.git.hooks;
+            consola.success("Removed hooks configuration from basis.config.ts");
+          }
+
+          if (removeConfig && config.git.config) {
+            delete config.git.config;
+            consola.success("Removed git config from basis.config.ts");
+          }
+
+          // Remove entire git section if empty
+          if (Object.keys(config.git).length === 0) {
+            delete config.git;
+            consola.success("Removed empty git section from basis.config.ts");
+          }
+        }
+      },
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // Default commit types following conventional commits
 const DEFAULT_TYPES = [
@@ -146,19 +186,19 @@ export async function lintCommitMessage(
       message = lastCommit.trim();
     }
   } catch (error) {
-    consola.error("✗ Failed to read commit message:", error);
+    consola.error("Failed to read commit message:", error);
     return false;
   }
 
   const result = validateCommitMessage(message, commitMsgConfig);
 
   if (!result.valid) {
-    consola.error("✗ Invalid commit message:");
+    consola.error("Invalid commit message:");
     result.errors.forEach((error) => consola.error(`  ${error}`));
     return false;
   }
 
-  consola.success("✓ Commit message is valid");
+  consola.success("Commit message is valid");
   return true;
 }
 
@@ -201,7 +241,7 @@ export async function readGitConfig(
   try {
     const content = await readFile(gitConfigPath, "utf8");
     const parsed = ini.parse(content);
-    consola.success(`✓ Read existing Git configuration from ${gitConfigPath}`);
+    consola.success(`Read existing Git configuration from ${gitConfigPath}`);
     return parsed;
   } catch (error) {
     consola.warn("Failed to read .git/config:", error);
@@ -237,7 +277,7 @@ export async function writeGitConfig(
       .join("\n");
 
     await writeFile(gitConfigPath, content, "utf8");
-    consola.success(`✓ Git configuration written to ${gitConfigPath}`);
+    consola.success(`Git configuration written to ${gitConfigPath}`);
   } catch (error) {
     consola.error("Failed to write .git/config:", error);
     throw error;
@@ -245,59 +285,30 @@ export async function writeGitConfig(
 }
 
 /**
- * Convert nested GitConfig to flat ini format for merging
+ * Check if config values already exist in Git config
  */
-function convertToIniFormat(config: GitConfig["config"]): GitConfigData {
-  const result: GitConfigData = {};
+function isConfigUpToDate(
+  existingConfig: GitConfigData,
+  ourConfig: GitConfig["config"],
+): boolean {
+  if (!ourConfig) return true;
 
-  if (!config) return result;
+  for (const [section, sectionConfig] of Object.entries(ourConfig)) {
+    if (typeof sectionConfig !== "object" || !sectionConfig) continue;
 
-  Object.entries(config).forEach(([section, sectionConfig]) => {
-    if (typeof sectionConfig === "object" && sectionConfig !== null) {
-      // Create section object if it doesn't exist
-      if (!result[section]) {
-        result[section] = {};
-      }
-
-      // Add each setting to the section
-      Object.entries(sectionConfig).forEach(([key, value]) => {
-        if (value !== undefined) {
-          result[section][key] = value;
-        }
-      });
+    const existingSection = existingConfig[section];
+    if (!existingSection || typeof existingSection !== "object") {
+      return false; // Section doesn't exist
     }
-  });
 
-  return result;
-}
-
-/**
- * Safely merge Git configurations
- */
-function mergeGitConfigs(
-  existing: GitConfigData,
-  newConfig: GitConfigData,
-): GitConfigData {
-  const merged = { ...existing };
-
-  Object.entries(newConfig).forEach(([section, sectionConfig]) => {
-    if (typeof sectionConfig === "object" && sectionConfig !== null) {
-      // Ensure section exists
-      if (!merged[section]) {
-        merged[section] = {};
+    for (const [key, value] of Object.entries(sectionConfig)) {
+      if (value !== undefined && existingSection[key] !== value) {
+        return false; // Value differs or doesn't exist
       }
-
-      // Merge section settings
-      Object.entries(sectionConfig).forEach(([key, value]) => {
-        if (value !== undefined) {
-          merged[section][key] = value;
-          consola.info(`🔧 Setting ${section}.${key} = ${value}`);
-        }
-      });
     }
-  });
+  }
 
-  return merged;
+  return true; // All our values are already present and match
 }
 
 /**
@@ -320,22 +331,25 @@ export async function setupGitConfig(
   }
 
   try {
-    // Create backup before making changes
-    const backupPath = await createGitConfigBackup(cwd);
-
     // Read existing configuration
     const existingConfig = await readGitConfig(cwd);
 
-    // Convert basis config to ini format
-    const newConfigIni = convertToIniFormat(gitConfigSettings);
+    // Check if our configuration values are already applied
+    if (isConfigUpToDate(existingConfig, gitConfigSettings)) {
+      consola.success("Git configuration is already up to date");
+      return true;
+    }
 
-    // Safely merge configurations
-    const mergedConfig = mergeGitConfigs(existingConfig, newConfigIni);
+    // Create backup before making changes (only when actually needed)
+    const backupPath = await createGitConfigBackup(cwd);
+
+    // Use defu to merge configurations (existing has priority)
+    const mergedConfig = defu(existingConfig, gitConfigSettings);
 
     // Write merged configuration
     await writeGitConfig(mergedConfig, cwd);
 
-    consola.success("✓ Git configuration setup completed");
+    consola.success("Git configuration setup completed");
     if (backupPath) {
       consola.info(
         `💾 Original config backed up to: ${backupPath.split("/").pop()}`,
@@ -344,7 +358,7 @@ export async function setupGitConfig(
 
     return true;
   } catch (error) {
-    consola.error("✗ Failed to setup Git configuration:", error);
+    consola.error("Failed to setup Git configuration:", error);
     return false;
   }
 }
@@ -400,7 +414,7 @@ export async function resetGitConfig(
     }
 
     await writeGitConfig(resetConfig, cwd);
-    consola.success("✓ Git configuration reset completed");
+    consola.success("Git configuration reset completed");
 
     if (backupPath) {
       consola.info(
@@ -410,13 +424,13 @@ export async function resetGitConfig(
 
     // Update basis.config.ts if requested
     if (options.updateConfig) {
-      const configSuccess = await updateBasisConfig(cwd, false, true);
+      const configSuccess = await removeGitFromBasisConfig(cwd, false, true);
       return configSuccess;
     }
 
     return true;
   } catch (error) {
-    consola.error("✗ Failed to reset Git configuration:", error);
+    consola.error("Failed to reset Git configuration:", error);
     return false;
   }
 }
@@ -437,7 +451,7 @@ export async function setupGitHooks(
   const hooksDir = resolve(cwd, ".git/hooks");
 
   if (!(await fileExists(hooksDir))) {
-    consola.error("✗ Git hooks directory not found. Is this a Git repository?");
+    consola.error("Git hooks directory not found. Is this a Git repository?");
     return false;
   }
 
@@ -464,9 +478,9 @@ export async function setupGitHooks(
       }
 
       await writeFile(hookPath, hookContent, { mode: 0o755 });
-      consola.success(`✓ Setup ${hookName} hook`);
+      consola.success(`Setup ${hookName} hook`);
     } catch (error) {
-      consola.error(`✗ Failed to setup ${hookName} hook:`, error);
+      consola.error(`Failed to setup ${hookName} hook:`, error);
       success = false;
     }
   }
@@ -486,7 +500,7 @@ export async function initGitRepo(cwd = process.cwd()): Promise<boolean> {
     } catch {
       // Initialize Git repository
       execSync("git init", { cwd, stdio: "inherit" });
-      consola.success("✓ Initialized Git repository");
+      consola.success("Initialized Git repository");
     }
 
     // Setup Git configuration and hooks
@@ -495,7 +509,7 @@ export async function initGitRepo(cwd = process.cwd()): Promise<boolean> {
 
     return configSuccess && hooksSuccess;
   } catch (error) {
-    consola.error("✗ Failed to initialize Git repository:", error);
+    consola.error("Failed to initialize Git repository:", error);
     return false;
   }
 }
@@ -521,67 +535,12 @@ export async function setupGit(cwd = process.cwd()): Promise<boolean> {
   );
 
   if (failures.length === 0) {
-    consola.success("✅ Git setup completed successfully!");
+    consola.success("Git setup completed successfully!");
     return true;
   }
 
-  consola.error(`❌ ${failures.length} Git setup step(s) failed`);
+  consola.error(`${failures.length} Git setup step(s) failed`);
   return false;
-}
-
-/**
- * Update basis.config.ts to remove git configuration
- */
-async function updateBasisConfig(
-  cwd: string,
-  removeHooks = false,
-  removeConfig = false,
-): Promise<boolean> {
-  const configPath = resolve(cwd, "basis.config.ts");
-
-  if (!(await fileExists(configPath))) {
-    consola.info("No basis.config.ts found to update");
-    return true;
-  }
-
-  try {
-    const content = await readFile(configPath, "utf8");
-    const mod = parseModule(content);
-
-    // Find the config object
-    const defaultExport = mod.exports.default;
-    if (!defaultExport || !defaultExport.$args?.[0]) {
-      consola.warn("Could not parse basis.config.ts structure");
-      return false;
-    }
-
-    const config = defaultExport.$args[0];
-
-    if (config.git) {
-      if (removeHooks && config.git.hooks) {
-        delete config.git.hooks;
-        consola.success("✓ Removed hooks configuration from basis.config.ts");
-      }
-
-      if (removeConfig && config.git.config) {
-        delete config.git.config;
-        consola.success("✓ Removed git config from basis.config.ts");
-      }
-
-      // Remove entire git section if empty
-      if (Object.keys(config.git).length === 0) {
-        delete config.git;
-        consola.success("✓ Removed empty git section from basis.config.ts");
-      }
-    }
-
-    const { code } = generateCode(mod);
-    await writeFile(configPath, code, "utf8");
-    return true;
-  } catch (error) {
-    consola.error("✗ Failed to update basis.config.ts:", error);
-    return false;
-  }
 }
 
 /**
@@ -609,9 +568,9 @@ export async function removeGitHooks(
       if (await fileExists(hookPath)) {
         try {
           await unlink(hookPath);
-          consola.success(`✓ Removed ${hookName} hook`);
+          consola.success(`Removed ${hookName} hook`);
         } catch (error) {
-          consola.error(`✗ Failed to remove ${hookName} hook:`, error);
+          consola.error(`Failed to remove ${hookName} hook:`, error);
           success = false;
         }
       }
@@ -627,9 +586,9 @@ export async function removeGitHooks(
       if (await fileExists(hookPath)) {
         try {
           await unlink(hookPath);
-          consola.success(`✓ Removed ${hookName} hook`);
+          consola.success(`Removed ${hookName} hook`);
         } catch (error) {
-          consola.error(`✗ Failed to remove ${hookName} hook:`, error);
+          consola.error(`Failed to remove ${hookName} hook:`, error);
           success = false;
         }
       }
@@ -637,7 +596,7 @@ export async function removeGitHooks(
 
     // Update basis.config.ts if requested
     if (options.updateConfig) {
-      const configSuccess = await updateBasisConfig(cwd, true, false);
+      const configSuccess = await removeGitFromBasisConfig(cwd, true, false);
       success = success && configSuccess;
     }
   }

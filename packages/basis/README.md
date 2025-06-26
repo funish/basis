@@ -57,9 +57,13 @@ pnpx @funish/basis init
 cd your-existing-project
 basis init
 
+# Interactive setup will ask you to:
+# 📁 Choose config format (.ts/.mjs/.cjs) - auto-detected based on your project
+# 🔧 Optionally setup Git hooks and configuration
+
 # Your project now has:
-# ✅ basis.config.ts configuration file
-# ✅ Git hooks setup (auto-installed via package.json scripts)
+# ✅ basis.config.[ts|mjs|cjs] configuration file (empty, ready to customize)
+# ✅ Git hooks setup (if selected during init)
 # ✅ Tool-agnostic linting workflow
 # ✅ Package management through unified CLI
 # ✅ Version management with semantic versioning
@@ -184,10 +188,15 @@ basis git lint-commit
 
 ```bash
 # Initialize configuration
-basis init                     # Initialize basis configuration
+basis init                     # Initialize basis configuration (interactive)
 basis init --force            # Overwrite existing configuration
 basis init --skip-git-check   # Skip git directory check
 basis init --skip-install     # Skip dependency installation
+
+# Interactive setup will:
+# 1. Auto-detect recommended config format (.ts/.mjs/.cjs)
+# 2. Ask you to choose your preferred format
+# 3. Offer to setup Git hooks and configuration
 
 # Configuration
 basis config                   # Show current configuration
@@ -201,7 +210,41 @@ basis <command> --help         # Show command-specific help
 
 ## Configuration
 
-Basis uses a single configuration file for all its features:
+Basis uses a single configuration file for all its features. The `basis init` command creates an empty configuration file in your preferred format:
+
+```ts
+// basis.config.ts (TypeScript)
+import { defineBasisConfig } from "@funish/basis";
+
+export default defineBasisConfig({
+  // Configure your project here
+  // See: https://github.com/funish/basis/tree/main/packages/basis#configuration
+});
+```
+
+```mjs
+// basis.config.mjs (ES Module)
+import { defineBasisConfig } from "@funish/basis";
+
+export default defineBasisConfig({
+  // Configure your project here
+  // See: https://github.com/funish/basis/tree/main/packages/basis#configuration
+});
+```
+
+```cjs
+// basis.config.cjs (CommonJS)
+const { defineBasisConfig } = require("@funish/basis");
+
+module.exports = defineBasisConfig({
+  // Configure your project here
+  // See: https://github.com/funish/basis/tree/main/packages/basis#configuration
+});
+```
+
+### Full Configuration Example
+
+Here's a complete configuration with all available options:
 
 ```ts
 // basis.config.ts
@@ -212,14 +255,14 @@ export default defineBasisConfig({
   lint: {
     // Staged files linting patterns
     staged: {
-      "*.{ts,tsx,js,jsx}": "eslint --fix",
-      "*.{json,md,yml,yaml}": "prettier --write",
-      "*.vue": "vue-tsc --noEmit && eslint --fix",
+      "*.{ts,tsx,js,jsx}": "pnpm eslint --fix",
+      "*.{json,md,yml,yaml}": "pnpm prettier --write",
+      "*.vue": "pnpm vue-tsc --noEmit && pnpm eslint --fix",
     },
     // Project-wide linting commands
     project: {
-      typecheck: "tsc --noEmit",
-      "format-check": "prettier --check .",
+      typecheck: "pnpm tsc --noEmit",
+      "format-check": "pnpm prettier --check .",
     },
   },
 
@@ -227,8 +270,8 @@ export default defineBasisConfig({
   git: {
     // Hook commands
     hooks: {
-      "pre-commit": "basis lint --staged",
-      "commit-msg": "basis git lint-commit",
+      "pre-commit": "pnpm basis lint --staged",
+      "commit-msg": "pnpm basis git lint-commit",
     },
 
     // Commit message validation

@@ -100,10 +100,10 @@ export const lint = defineCommand({
     }
 
     if (success) {
-      consola.success("✅ All lint checks completed successfully!");
+      consola.success("All lint checks completed successfully!");
       process.exit(0);
     } else {
-      consola.error("❌ Some lint checks failed");
+      consola.error("Some lint checks failed");
       process.exit(1);
     }
   },

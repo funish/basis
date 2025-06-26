@@ -51,7 +51,13 @@ async function runPrePublishChecks(
   if (config.buildCommand && !options.skipBuild) {
     consola.start("Building package...");
     try {
-      execSync(config.buildCommand, { cwd, stdio: "inherit" });
+      if (config.buildCommand.includes(" ")) {
+        // Custom command with arguments, use execSync
+        execSync(config.buildCommand, { cwd, stdio: "inherit" });
+      } else {
+        // Simple script name, use runScript
+        await runScript(config.buildCommand, { cwd, silent: false });
+      }
       consola.success("Build completed");
     } catch (error) {
       consola.error("Build failed");

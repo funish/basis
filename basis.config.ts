@@ -6,9 +6,9 @@ export default defineBasisConfig({
       "*": "pnpm lint",
     },
     project: {
-      check: "pnpm exec biome check . --write --unsafe",
+      check: "pnpm biome check . --write --unsafe",
       format:
-        "pnpm exec prettier --write --list-different . --ignore-path .gitignore",
+        "pnpm prettier --write --list-different . --ignore-path .gitignore",
     },
   },
   git: {

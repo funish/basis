@@ -44,9 +44,9 @@ export const git = defineCommand({
         const success = await setupGitConfig(cwd);
 
         if (success) {
-          consola.success("✅ Git configuration completed successfully!");
+          consola.success("Git configuration completed successfully!");
         } else {
-          consola.error("❌ Git configuration failed");
+          consola.error("Git configuration failed");
           process.exit(1);
         }
       },
@@ -64,9 +64,9 @@ export const git = defineCommand({
         const success = await setupGitHooks(cwd);
 
         if (success) {
-          consola.success("✅ Git hooks setup completed successfully!");
+          consola.success("Git hooks setup completed successfully!");
         } else {
-          consola.error("❌ Git hooks setup failed");
+          consola.error("Git hooks setup failed");
           process.exit(1);
         }
       },
@@ -110,9 +110,9 @@ export const git = defineCommand({
         });
 
         if (success) {
-          consola.success("✅ Git hooks removed successfully!");
+          consola.success("Git hooks removed successfully!");
         } else {
-          consola.error("❌ Git hooks removal failed");
+          consola.error("Git hooks removal failed");
           process.exit(1);
         }
       },
@@ -148,9 +148,9 @@ export const git = defineCommand({
         const success = await resetGitConfig(cwd, keepUser, { updateConfig });
 
         if (success) {
-          consola.success("✅ Git configuration reset successfully!");
+          consola.success("Git configuration reset successfully!");
         } else {
-          consola.error("❌ Git configuration reset failed");
+          consola.error("Git configuration reset failed");
           process.exit(1);
         }
       },
@@ -168,9 +168,9 @@ export const git = defineCommand({
         const success = await initGitRepo(cwd);
 
         if (success) {
-          consola.success("✅ Git repository initialized successfully!");
+          consola.success("Git repository initialized successfully!");
         } else {
-          consola.error("❌ Git initialization failed");
+          consola.error("Git initialization failed");
           process.exit(1);
         }
       },
@@ -188,9 +188,9 @@ export const git = defineCommand({
         const success = await lintCommitMessage(cwd);
 
         if (success) {
-          consola.success("✅ Commit message validation passed!");
+          consola.success("Commit message validation passed!");
         } else {
-          consola.error("❌ Commit message validation failed");
+          consola.error("Commit message validation failed");
           process.exit(1);
         }
       },
