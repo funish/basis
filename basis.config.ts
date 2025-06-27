@@ -6,9 +6,9 @@ export default defineBasisConfig({
       "*": "pnpm lint",
     },
     project: {
-      check: "pnpm biome check . --write --unsafe",
+      check: "pnpm oxlint --fix --fix-suggestions",
       format:
-        "pnpm prettier --write --list-different . --ignore-path .gitignore",
+        "pnpm prettier --write --list-different . --ignore-path .gitignore --plugin=@prettier/plugin-oxc",
     },
     dependencies: {
       allowedLicenses: ["MIT", "ISC", "BSD-2-Clause", "BSD-3-Clause"],

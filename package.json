@@ -4,8 +4,8 @@
   "description": "Monorepo for @funish/basis - A unified development toolkit with CLI, package management, versioning, publishing, linting, and git hooks.",
   "private": true,
   "scripts": {
-    "build": "pnpm -r prepack",
     "dev": "pnpm -r prepack --stub",
+    "build": "pnpm -r prepack",
     "lint": "basis lint --project",
     "postinstall": "pnpm dev && basis git setup"
   },
@@ -44,9 +44,10 @@
   },
   "homepage": "https://github.com/funish/basis#readme",
   "devDependencies": {
-    "@biomejs/biome": "2.0.5",
     "@funish/basis": "workspace:*",
+    "@prettier/plugin-oxc": "0.0.4",
     "@types/node": "24.0.4",
+    "oxlint": "1.3.0",
     "prettier": "3.6.0",
     "unbuild": "3.5.0"
   },

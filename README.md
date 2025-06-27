@@ -66,7 +66,6 @@ basis/
 ├── package.json                 # Monorepo configuration
 ├── pnpm-workspace.yaml          # pnpm workspace configuration
 ├── tsconfig.json                # TypeScript configuration
-├── biome.json                   # Code formatting (Biome)
 ├── basis.config.ts              # Self-hosting configuration
 └── README.md                    # This file (development documentation)
 ```
@@ -234,7 +233,7 @@ export default defineBasisConfig({
   },
   lint: {
     staged: {
-      "*.{ts,js,json}": "pnpm biome check . --write --unsafe",
+      "*.{ts,js,json}": "pnpm oxlint --fix --fix-suggestions",
     },
   },
   packageManager: {

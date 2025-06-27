@@ -18,7 +18,7 @@ Basis is your **unified development toolkit** for modern JavaScript/TypeScript p
 - 📦 **Package Management**: Install, add, remove dependencies with auto-detected package manager (npm, yarn, pnpm, bun, deno)
 - 🏷️ **Version Management**: Semantic versioning with automated git tagging and releases
 - 🚀 **Publishing**: Multi-tag publishing strategy with edge version tracking
-- 🔧 **Tool Agnostic Linting**: Not tied to specific linters - use ESLint, Biome, or any tool you prefer
+- 🔧 **Tool Agnostic Linting**: Not tied to specific linters - use ESLint, Oxlint, Biome, or any tool you prefer
 - 🪝 **Smart Git Hooks**: Automatic git repository initialization and hook management
 - 💻 **Modern Stack**: Built on the unjs ecosystem (citty, consola, c12, nypm, semver)
 - 💪 **TypeScript First**: Full TypeScript support with excellent DX
@@ -393,7 +393,7 @@ Built-in semantic versioning support using the standard [semver](https://www.npm
 
 ### 🔧 **Tool Agnostic**
 
-Basis doesn't force specific tools. Use ESLint, Biome, or any other linter. Basis orchestrates your existing tools, doesn't replace them.
+Basis doesn't force specific tools. Use ESLint, Oxlint, Biome, or any other linter. Basis orchestrates your existing tools, doesn't replace them.
 
 ### 📦 **Modern Foundations**
 
@@ -404,7 +404,7 @@ Built on the [unjs ecosystem](https://unjs.io/), leveraging proven tools like `c
 Basis integrates seamlessly with:
 
 - **Package Managers**: npm, yarn, pnpm, bun, deno (auto-detected)
-- **Linters**: ESLint, Biome, Prettier, StyleLint
+- **Linters**: ESLint, Oxlint, Biome, Prettier, StyleLint
 - **Git**: Works with any git workflow and hosting provider
 - **CI/CD**: GitHub Actions, GitLab CI, Jenkins
 - **Frameworks**: React, Vue, Angular, Next.js, Nuxt, SvelteKit

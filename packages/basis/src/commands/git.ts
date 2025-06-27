@@ -179,13 +179,5 @@ export const git = defineCommand({
   },
 
   // Default action when no subcommand is provided
-  async run() {
-    const cwd = process.cwd();
-
-    const success = await setupGit(cwd);
-
-    if (!success) {
-      process.exit(1);
-    }
-  },
+  async run() {},
 });
