@@ -10,7 +10,7 @@ import {
   writePackageJSON,
 } from "pkg-types";
 import type { InitOptions } from "../types";
-import { fileExists } from "../utils";
+import { fileExists, getPackageManagerCommands } from "../utils";
 import { initGitRepo, setupGit } from "./git";
 
 /**
@@ -27,7 +27,10 @@ type ConfigFormat = keyof typeof CONFIG_FORMATS;
 /**
  * Generate config file content based on format using magicast programmatically
  */
-function generateConfigContent(format: ConfigFormat): string {
+function generateConfigContent(
+  format: ConfigFormat,
+  packageManager: string = "npm",
+): string {
   // Create base template based on format
   const template =
     format === "cjs"
@@ -37,18 +40,16 @@ function generateConfigContent(format: ConfigFormat): string {
   // Parse the template
   const mod = parseModule(template);
 
-  // Create simplified config object with basic structure
+  // Get package manager execution prefix
+  const { execPrefix } = getPackageManagerCommands(packageManager);
+
+  // Create config object with only user-customizable parts
   const configObject = {
-    lint: {
-      staged: {},
-      project: {},
-    },
     git: {
-      hooks: {},
-      autoSetup: true,
-    },
-    packageManager: {
-      autoDetect: true,
+      hooks: {
+        "pre-commit": `${execPrefix} basis lint --staged`,
+        "commit-msg": `${execPrefix} basis git --lint-commit`,
+      },
     },
   };
 
@@ -175,13 +176,17 @@ export async function init(cwd = process.cwd(), options: InitOptions = {}) {
     }
   }
 
+  // Detect package manager for hooks generation
+  const detected = await detectPackageManager(cwd);
+  const detectedPackageManager = detected?.name || "npm";
+
   // Create config file
   await updateConfig({
     cwd,
     configFile: "basis.config",
     createExtension: `.${configExtension}`,
     onCreate: () => {
-      return generateConfigContent(configFormat);
+      return generateConfigContent(configFormat, detectedPackageManager);
     },
   });
 
@@ -224,9 +229,8 @@ export async function init(cwd = process.cwd(), options: InitOptions = {}) {
       if (await fileExists(packageJsonPath)) {
         const pkg: PackageJson = await readPackageJSON(packageJsonPath);
 
-        // Detect package manager for script selection
-        const detected = await detectPackageManager(cwd);
-        const packageManager = detected?.name || "npm";
+        // Use already detected package manager
+        const packageManager = detectedPackageManager;
 
         // Add git setup script
         const hookInstallCommand = "basis git setup";
@@ -238,12 +242,11 @@ export async function init(cwd = process.cwd(), options: InitOptions = {}) {
         const existingScript = pkg.scripts[scriptName];
 
         let scriptAdded = false;
-        if (!existingScript) {
-          pkg.scripts[scriptName] = hookInstallCommand;
-          scriptAdded = true;
-        } else if (!existingScript.includes(hookInstallCommand)) {
-          pkg.scripts[scriptName] =
-            `${existingScript} && ${hookInstallCommand}`;
+        // Only add if not already included
+        if (!existingScript?.includes(hookInstallCommand)) {
+          pkg.scripts[scriptName] = existingScript
+            ? `${existingScript} && ${hookInstallCommand}`
+            : hookInstallCommand;
           scriptAdded = true;
         }
 

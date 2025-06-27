@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "pnpm -r prepack --stub",
     "build": "pnpm -r prepack",
-    "lint": "basis lint --project",
+    "lint": "basis lint --all",
     "postinstall": "pnpm dev && basis git setup"
   },
   "repository": {

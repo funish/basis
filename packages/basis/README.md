@@ -49,8 +49,8 @@ pnpm add -D @funish/basis
 # Or with npm
 npm install -D @funish/basis
 
-# Or use directly with pnpx (recommended over npx)
-pnpx @funish/basis init
+# Or use directly without installation
+npx @funish/basis init
 ```
 
 ### Initialize in Existing Project
@@ -64,7 +64,7 @@ basis init
 # 🔧 Optionally setup Git hooks and configuration
 
 # Your project now has:
-# ✅ basis.config.[ts|mjs|cjs] configuration file (empty, ready to customize)
+# ✅ Configuration file with Git hooks that adapt to your package manager
 # ✅ Git hooks setup (if selected during init)
 # ✅ Tool-agnostic linting workflow
 # ✅ Package management through unified CLI
@@ -183,7 +183,7 @@ basis git reset --update-config         # Reset config AND remove from basis.con
 basis git init
 
 # Validate commit message
-basis git lint-commit
+basis git --lint-commit
 ```
 
 ### Project Management
@@ -212,25 +212,21 @@ basis <command> --help         # Show command-specific help
 
 ## Configuration
 
-Basis uses a single configuration file for all its features. The `basis init` command creates an empty configuration file in your preferred format:
+Basis uses a single configuration file for all its features. The `basis init` command creates a configuration file with customized Git hooks in your preferred format:
 
 ```ts
-// basis.config.ts (TypeScript)
+// basis.config.ts (TypeScript) or basis.config.mjs (ES Module)
 import { defineBasisConfig } from "@funish/basis";
 
 export default defineBasisConfig({
   // Configure your project here
   // See: https://github.com/funish/basis/tree/main/packages/basis#configuration
-});
-```
-
-```mjs
-// basis.config.mjs (ES Module)
-import { defineBasisConfig } from "@funish/basis";
-
-export default defineBasisConfig({
-  // Configure your project here
-  // See: https://github.com/funish/basis/tree/main/packages/basis#configuration
+  git: {
+    hooks: {
+      "pre-commit": "pnpm exec basis lint --staged", // Auto-adapts to your package manager
+      "commit-msg": "pnpm exec basis git --lint-commit",
+    },
+  },
 });
 ```
 
@@ -241,8 +237,16 @@ const { defineBasisConfig } = require("@funish/basis");
 module.exports = defineBasisConfig({
   // Configure your project here
   // See: https://github.com/funish/basis/tree/main/packages/basis#configuration
+  git: {
+    hooks: {
+      "pre-commit": "npx basis lint --staged", // Auto-adapts to your package manager
+      "commit-msg": "npx basis git --lint-commit",
+    },
+  },
 });
 ```
+
+> **💡 Configuration**: The generated config file only shows the Git hooks that are customized for your package manager. All other configuration options use smart defaults and can be added as needed.
 
 ### Full Configuration Example
 
@@ -272,8 +276,8 @@ export default defineBasisConfig({
   git: {
     // Hook commands
     hooks: {
-      "pre-commit": "pnpm basis lint --staged",
-      "commit-msg": "pnpm basis git lint-commit",
+      "pre-commit": "pnpm exec basis lint --staged",
+      "commit-msg": "pnpm exec basis git --lint-commit",
     },
 
     // Commit message validation
@@ -411,24 +415,24 @@ Basis integrates seamlessly with:
 
 ## Why Choose Basis?
 
-### Instead of this:
+### Instead of juggling multiple tools:
 
 ```bash
 npm install package          # Package management
 yarn version patch           # Version management
 npm publish --tag beta       # Publishing
 npx lint-staged             # Linting
-npx husky install           # Git hooks
+git config --global ...     # Git configuration
 ```
 
-### Do this:
+### Use one unified command:
 
 ```bash
 basis add package           # Unified package management
 basis version patch         # Unified version management
 basis publish --tag beta   # Unified publishing
 basis lint --staged        # Unified linting
-basis git hooks            # Unified git hooks
+basis git setup            # Unified git setup
 ```
 
 ## API

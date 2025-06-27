@@ -12,8 +12,6 @@ export function defineBasisConfig(config: BasisConfig): BasisConfig {
  */
 export const defaultConfig: BasisConfig = {
   lint: {
-    staged: {},
-    project: {},
     dependencies: {
       checkSecurity: true,
     },

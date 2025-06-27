@@ -34,26 +34,31 @@ export function getPackageManagerCommands(packageManager: string) {
       return {
         outdated: "yarn outdated --json",
         audit: "yarn audit --level moderate",
+        execPrefix: "yarn exec",
       };
     case "pnpm":
       return {
         outdated: "pnpm outdated --format table",
         audit: "pnpm audit --audit-level moderate",
+        execPrefix: "pnpm exec",
       };
     case "bun":
       return {
         outdated: "bun outdated",
         audit: null, // Bun doesn't have built-in audit command yet
+        execPrefix: "bunx",
       };
     case "deno":
       return {
         outdated: null, // Deno doesn't have traditional outdated check
         audit: null, // Deno doesn't have audit command
+        execPrefix: "deno task",
       };
     default: // npm
       return {
         outdated: "npm outdated --json",
         audit: "npm audit --audit-level moderate",
+        execPrefix: "npx",
       };
   }
 }
