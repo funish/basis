@@ -102,8 +102,6 @@ export default defineCommand({
           }
         }
       }
-
-      consola.success("Configuration loaded successfully");
     } catch (error) {
       consola.error("Failed to load configuration:", error);
       process.exit(1);

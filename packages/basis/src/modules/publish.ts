@@ -7,6 +7,32 @@ import type { PublishConfig, PublishOptions, PublishResult } from "../types";
 import { loadConfig } from "../utils";
 
 /**
+ * Determine publish tag based on version and options
+ */
+function determinePublishTag(
+  version: string,
+  options: PublishOptions,
+  config: PublishConfig,
+): string {
+  if (options.tag) {
+    return options.tag;
+  }
+
+  if (options.stable || options.latest) {
+    return config.stableTag || "latest";
+  }
+
+  if (semver.prerelease(version)) {
+    const prerelease = semver.prerelease(version);
+    return (
+      (prerelease && (prerelease[0] as string)) || config.defaultTag || "edge"
+    );
+  }
+
+  return config.stableTag || "latest";
+}
+
+/**
  * Run pre-publish checks
  */
 async function runPrePublishChecks(
@@ -40,7 +66,6 @@ async function runPrePublishChecks(
       } else {
         await runScript("test", { cwd, silent: false });
       }
-      consola.success("Tests passed");
     } catch (error) {
       consola.error("Tests failed");
       throw error;
@@ -58,7 +83,6 @@ async function runPrePublishChecks(
         // Simple script name, use runScript
         await runScript(config.buildCommand, { cwd, silent: false });
       }
-      consola.success("Build completed");
     } catch (error) {
       consola.error("Build failed");
       throw error;
@@ -79,7 +103,6 @@ async function runPostPublishActions(
       if (config.createGitTag) {
         execSync("git push --tags", { cwd });
       }
-      consola.success("Pushed changes to remote");
     } catch (error) {
       consola.warn("Failed to push changes:", error);
     }
@@ -101,12 +124,16 @@ export async function publishPackage(
   const { name: packageName, version } = packageJson;
 
   if (!packageName || !version) {
-    throw new Error("Missing name or version in package.json");
+    throw new Error(
+      "Missing name or version in package.json. Please ensure your package.json contains valid 'name' and 'version' fields.",
+    );
   }
 
   // Validate version format
   if (!semver.valid(version)) {
-    throw new Error(`Invalid version format in package.json: ${version}`);
+    throw new Error(
+      `Invalid version format in package.json: ${version}. Please use semantic versioning format (e.g., 1.0.0, 2.1.0-alpha.1)`,
+    );
   }
 
   // Detect package manager
@@ -116,26 +143,8 @@ export async function publishPackage(
   // Run pre-publish checks
   await runPrePublishChecks(cwd, publishConfig, options);
 
-  // Determine publish tag directly using semver
-  let publishTag: string;
-
-  if (options.tag) {
-    publishTag = options.tag;
-  } else if (options.stable || options.latest) {
-    publishTag = publishConfig.stableTag || "latest";
-  } else if (semver.prerelease(version)) {
-    // Extract prerelease identifier for prerelease versions
-    const prerelease = semver.prerelease(version);
-    publishTag =
-      (prerelease && (prerelease[0] as string)) ||
-      publishConfig.defaultTag ||
-      "edge";
-  } else {
-    // Stable versions go to latest tag
-    publishTag = publishConfig.stableTag || "latest";
-  }
-
-  consola.info(`Publishing ${packageName}@${version} to tag: ${publishTag}`);
+  // Determine publish tag
+  const publishTag = determinePublishTag(version, options, publishConfig);
 
   // Build publish command using detected package manager
   const publishArgs = [
@@ -165,7 +174,7 @@ export async function publishPackage(
     execSync(publishCommand, { cwd, stdio: "inherit" });
 
     if (!options.dryRun) {
-      consola.success(`Published ${packageName}@${version} to ${publishTag}`);
+      // Note: Final success message is handled by the command layer
 
       // Always publish to defaultTag (edge) as well, unless it's the same tag
       const defaultTag = publishConfig.defaultTag || "edge";
@@ -184,9 +193,6 @@ export async function publishPackage(
           }
 
           execSync(distTagCommand, { cwd, stdio: "inherit" });
-          consola.success(
-            `Also published ${packageName}@${version} to ${defaultTag}`,
-          );
         } catch (error) {
           consola.warn(`Failed to add ${defaultTag} tag:`, error);
         }
@@ -194,8 +200,6 @@ export async function publishPackage(
 
       // Run post-publish actions
       await runPostPublishActions(cwd, publishConfig);
-    } else {
-      consola.success("Dry run completed successfully");
     }
 
     return {

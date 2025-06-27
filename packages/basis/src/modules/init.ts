@@ -1,16 +1,17 @@
 import { updateConfig } from "c12/update";
 import { consola } from "consola";
-import { builders, generateCode, parseModule } from "magicast";
-import {
-  addDevDependency,
-  detectPackageManager,
-  installDependencies,
-} from "nypm";
+import { generateCode, parseModule } from "magicast";
+import { addDevDependency, detectPackageManager } from "nypm";
 import { resolve } from "pathe";
-import { readPackageJSON, writePackageJSON } from "pkg-types";
+import {
+  findWorkspaceDir,
+  type PackageJson,
+  readPackageJSON,
+  writePackageJSON,
+} from "pkg-types";
 import type { InitOptions } from "../types";
 import { fileExists } from "../utils";
-import { setupGit } from "./git";
+import { initGitRepo, setupGit } from "./git";
 
 /**
  * Configuration file format options
@@ -27,51 +28,46 @@ type ConfigFormat = keyof typeof CONFIG_FORMATS;
  * Generate config file content based on format using magicast programmatically
  */
 function generateConfigContent(format: ConfigFormat): string {
-  // Create empty module
-  const mod = parseModule("");
+  // Create base template based on format
+  const template =
+    format === "cjs"
+      ? `const { defineBasisConfig } = require("@funish/basis");\n\nmodule.exports = defineBasisConfig({});`
+      : `import { defineBasisConfig } from "@funish/basis";\n\nexport default defineBasisConfig({});`;
 
-  if (format === "cjs") {
-    // Add CommonJS import
-    mod.imports.$prepend({
-      from: "@funish/basis",
-      imported: "defineBasisConfig",
-      local: "defineBasisConfig",
-    });
+  // Parse the template
+  const mod = parseModule(template);
 
-    // Create empty config object and function call
-    mod.exports.default = builders.functionCall("defineBasisConfig", {});
+  // Create simplified config object with basic structure
+  const configObject = {
+    lint: {
+      staged: {},
+      project: {},
+    },
+    git: {
+      hooks: {},
+      autoSetup: true,
+    },
+    packageManager: {
+      autoDetect: true,
+    },
+  };
 
-    // Add comments to the config object
-    const configArg = mod.exports.default.$args[0];
-    configArg.$ast.leadingComments = [
-      {
-        type: "Block",
-        value:
-          "\n  Configure your project here\n  See: https://github.com/funish/basis/tree/main/packages/basis#configuration\n  ",
-      },
-    ];
-  } else {
-    // ES modules format (both .ts and .mjs)
-    // Add ES import
-    mod.imports.$prepend({
-      from: "@funish/basis",
-      imported: "defineBasisConfig",
-      local: "defineBasisConfig",
-    });
+  // Get the function call argument (the config object)
+  const functionCall =
+    format === "cjs" ? mod.exports.default : mod.exports.default;
+  const configArg = functionCall.$args[0];
 
-    // Create empty config object and function call
-    mod.exports.default = builders.functionCall("defineBasisConfig", {});
+  // Replace empty object with our config structure
+  Object.assign(configArg, configObject);
 
-    // Add comments to the config object
-    const configArg = mod.exports.default.$args[0];
-    configArg.$ast.leadingComments = [
-      {
-        type: "Block",
-        value:
-          "\n  Configure your project here\n  See: https://github.com/funish/basis/tree/main/packages/basis#configuration\n  ",
-      },
-    ];
-  }
+  // Add comments to the config object
+  configArg.$ast.leadingComments = [
+    {
+      type: "Block",
+      value:
+        "\n  Configure your project here\n  See: https://github.com/funish/basis/tree/main/packages/basis#configuration\n  ",
+    },
+  ];
 
   return generateCode(mod).code;
 }
@@ -113,20 +109,10 @@ export async function init(cwd = process.cwd(), options: InitOptions = {}) {
   const configFormat = (await consola.prompt("Choose config file format:", {
     type: "select",
     initial: recommendedFormat,
-    options: [
-      {
-        value: "ts",
-        label: `${CONFIG_FORMATS.ts.label} (${CONFIG_FORMATS.ts.ext}) ${recommendedFormat === "ts" ? "(recommended)" : ""}`,
-      },
-      {
-        value: "mjs",
-        label: `${CONFIG_FORMATS.mjs.label} (${CONFIG_FORMATS.mjs.ext}) ${recommendedFormat === "mjs" ? "(recommended)" : ""}`,
-      },
-      {
-        value: "cjs",
-        label: `${CONFIG_FORMATS.cjs.label} (${CONFIG_FORMATS.cjs.ext}) ${recommendedFormat === "cjs" ? "(recommended)" : ""}`,
-      },
-    ],
+    options: Object.entries(CONFIG_FORMATS).map(([value, { label, ext }]) => ({
+      value,
+      label: `${label} (${ext}) ${recommendedFormat === value ? "(recommended)" : ""}`,
+    })),
   })) as ConfigFormat;
 
   const configExtension = CONFIG_FORMATS[configFormat].ext;
@@ -145,6 +131,7 @@ export async function init(cwd = process.cwd(), options: InitOptions = {}) {
   let shouldSetupGit = false;
   if (!skipGitCheck) {
     const hasGit = await fileExists(resolve(cwd, ".git"));
+
     if (hasGit) {
       shouldSetupGit = await consola.prompt(
         "Setup Git hooks and configuration?",
@@ -154,139 +141,141 @@ export async function init(cwd = process.cwd(), options: InitOptions = {}) {
         },
       );
     } else {
-      consola.warn(
-        "No .git directory found. Git hooks will not work properly.",
-      );
-      const shouldContinue = await consola.prompt("Continue anyway?", {
+      consola.info("No Git repository found.");
+      const shouldInitGit = await consola.prompt("Initialize Git repository?", {
         type: "confirm",
-        initial: false,
+        initial: true,
       });
-      if (!shouldContinue) {
-        consola.info("Initialization cancelled.");
-        return false;
+
+      if (shouldInitGit) {
+        // Initialize Git repository first
+        try {
+          const gitInitSuccess = await initGitRepo(cwd);
+          if (gitInitSuccess) {
+            shouldSetupGit = await consola.prompt(
+              "Setup Git hooks and configuration?",
+              {
+                type: "confirm",
+                initial: true,
+              },
+            );
+          } else {
+            consola.warn("Git initialization failed, skipping Git setup");
+            shouldSetupGit = false;
+          }
+        } catch (error) {
+          consola.error("Failed to initialize Git repository:", error);
+          consola.warn("Skipping Git setup");
+          shouldSetupGit = false;
+        }
+      } else {
+        consola.info("Skipping Git initialization");
+        shouldSetupGit = false;
       }
     }
   }
 
-  // Detect package manager
-  const detected = await detectPackageManager(cwd);
-  const packageManager = detected?.name || "npm";
-  consola.info(`Detected package manager: ${packageManager}`);
-
-  // Create empty config file
+  // Create config file
   await updateConfig({
     cwd,
     configFile: "basis.config",
-    createExtension: configExtension,
+    createExtension: `.${configExtension}`,
     onCreate: () => {
-      consola.info(`Creating ${configFileName}...`);
       return generateConfigContent(configFormat);
     },
   });
 
-  consola.success(`Created ${configFileName}`);
-
-  try {
-    // Update package.json scripts and dependencies
-    const pkg = await readPackageJSON(cwd);
-
-    // Check if we're in a workspace root
-    const isWorkspaceRoot = !!(
-      pkg.workspaces || (await fileExists(resolve(cwd, "pnpm-workspace.yaml")))
+  // Ask about dependency installation
+  let shouldInstallDeps = false;
+  if (!skipInstall) {
+    shouldInstallDeps = await consola.prompt(
+      "Install @funish/basis dependency now?",
+      {
+        type: "confirm",
+        initial: true,
+      },
     );
-
-    if (!skipInstall) {
-      // Add basis to devDependencies using nypm when not skipping install
-      await addDevDependency("@funish/basis", {
-        cwd,
-        silent: false,
-        workspace: isWorkspaceRoot,
-      });
-      consola.success("Added @funish/basis to devDependencies");
-    } else {
-      // Manually add to package.json when skipping install
-      if (
-        !pkg.devDependencies?.["@funish/basis"] &&
-        !pkg.dependencies?.["@funish/basis"]
-      ) {
-        pkg.devDependencies = pkg.devDependencies || {};
-        pkg.devDependencies["@funish/basis"] = "latest";
-        consola.info("Added @funish/basis to devDependencies");
-      }
-    }
-
-    // Add scripts based on package manager
-    const hookInstallCommand = "basis git --setup";
-    pkg.scripts = pkg.scripts || {};
-
-    // Handle different package managers' lifecycle scripts
-    if (packageManager === "pnpm") {
-      // pnpm runs postinstall for root and each workspace package
-      if (!pkg.scripts.postinstall) {
-        pkg.scripts.postinstall = hookInstallCommand;
-      } else if (!pkg.scripts.postinstall.includes(hookInstallCommand)) {
-        pkg.scripts.postinstall = `${pkg.scripts.postinstall} && ${hookInstallCommand}`;
-      }
-    } else if (packageManager === "yarn") {
-      // yarn has different behavior in v1 vs v2+, use prepare instead
-      if (!pkg.scripts.prepare) {
-        pkg.scripts.prepare = hookInstallCommand;
-      } else if (!pkg.scripts.prepare.includes(hookInstallCommand)) {
-        pkg.scripts.prepare = `${pkg.scripts.prepare} && ${hookInstallCommand}`;
-      }
-    } else {
-      // npm and others use postinstall
-      if (!pkg.scripts.postinstall) {
-        pkg.scripts.postinstall = hookInstallCommand;
-      } else if (!pkg.scripts.postinstall.includes(hookInstallCommand)) {
-        pkg.scripts.postinstall = `${pkg.scripts.postinstall} && ${hookInstallCommand}`;
-      }
-    }
-
-    // Always write package.json to update scripts (and dependencies if skipping install)
-    await writePackageJSON(resolve(cwd, "package.json"), pkg);
-    consola.success(
-      `Updated package.json scripts${skipInstall ? " and dependencies" : ""}`,
-    );
-
-    // Install dependencies using nypm if not skipped
-    if (!skipInstall) {
-      consola.start("Installing dependencies...");
-      await installDependencies({
-        cwd,
-        silent: false,
-      });
-      consola.success("Dependencies installed successfully");
-    } else {
-      consola.info("Skipped dependency installation");
-      consola.info(
-        "Run your package manager's install command to complete setup",
-      );
-    }
-  } catch (error) {
-    consola.error("Failed to setup dependencies:", error);
-    return false;
   }
 
-  // Setup Git if requested
+  // Check workspace configuration
+  const workspaceDir = await findWorkspaceDir(cwd);
+  const isWorkspaceRoot = workspaceDir === cwd;
+
+  // Install dependencies if requested
+  if (shouldInstallDeps) {
+    try {
+      // Use workspace option for addDevDependency
+      await addDevDependency(["@funish/basis"], {
+        workspace: isWorkspaceRoot,
+      });
+    } catch (error) {
+      consola.error("Failed to install @funish/basis:", error);
+      consola.info(
+        "You can install it manually with: basis add -D @funish/basis",
+      );
+    }
+  }
+
+  // Add git setup script to package.json if needed
   if (shouldSetupGit) {
-    consola.start("Setting up Git hooks and configuration...");
+    try {
+      const packageJsonPath = resolve(cwd, "package.json");
+
+      if (await fileExists(packageJsonPath)) {
+        const pkg: PackageJson = await readPackageJSON(packageJsonPath);
+
+        // Detect package manager for script selection
+        const detected = await detectPackageManager(cwd);
+        const packageManager = detected?.name || "npm";
+
+        // Add git setup script
+        const hookInstallCommand = "basis git setup";
+        pkg.scripts = pkg.scripts || {};
+
+        // Determine script name based on package manager
+        const scriptName =
+          packageManager === "yarn" ? "prepare" : "postinstall";
+        const existingScript = pkg.scripts[scriptName];
+
+        let scriptAdded = false;
+        if (!existingScript) {
+          pkg.scripts[scriptName] = hookInstallCommand;
+          scriptAdded = true;
+        } else if (!existingScript.includes(hookInstallCommand)) {
+          pkg.scripts[scriptName] =
+            `${existingScript} && ${hookInstallCommand}`;
+          scriptAdded = true;
+        }
+
+        if (scriptAdded) {
+          await writePackageJSON(packageJsonPath, pkg);
+        }
+      } else {
+        consola.warn(
+          "No package.json found. You'll need to run git setup manually.",
+        );
+      }
+    } catch (error) {
+      consola.error("Failed to update package.json:", error);
+      consola.warn(
+        "You can manually add 'basis git setup' to your postinstall script",
+      );
+    }
+  }
+
+  // Only setup Git manually if dependencies were NOT installed
+  // (because postinstall scripts already ran Git setup)
+  if (shouldSetupGit && !shouldInstallDeps) {
     const gitSuccess = await setupGit(cwd);
-    if (gitSuccess) {
-      consola.success("Git setup completed!");
-    } else {
+    if (!gitSuccess) {
       consola.warn(
         "Git setup failed, but basis config was created successfully",
       );
     }
   }
 
+  // Final success message - users need to know init completed
   consola.success("Basis initialization completed!");
-  consola.info("You can now:");
-  consola.info(`  - Edit ${configFileName} to customize your configuration`);
-  if (!shouldSetupGit) {
-    consola.info("  - Run `basis git --setup` to install git hooks");
-  }
 
   return true;
 }

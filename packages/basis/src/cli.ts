@@ -5,7 +5,7 @@ import { consola } from "consola";
 import { readPackageJSON } from "pkg-types";
 
 async function main() {
-  const packageJson = await readPackageJSON();
+  const packageJson = await readPackageJSON(import.meta.url);
 
   const cli = defineCommand({
     meta: {

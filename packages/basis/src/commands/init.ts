@@ -19,7 +19,7 @@ export default defineCommand({
     },
     "skip-install": {
       type: "boolean",
-      description: "Skip showing install command",
+      description: "Skip dependency installation",
     },
   },
   async run({ args }) {

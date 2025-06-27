@@ -117,28 +117,12 @@ basis/
    basis --version
    ```
 
-### Development Workflow
+### Development Commands
 
 ```bash
-# Start development mode
-pnpm dev
-
-# Code quality checks
-pnpm check          # Run Biome linting and formatting
-
-# Build for production
-pnpm build
-
-# Clean build artifacts
-pnpm clean
-
-# Test the package
-cd playground
-basis init          # Test initialization
-basis add lodash    # Test package management
-basis version patch # Test versioning
-basis git setup     # Test git configuration
-basis lint --staged # Test linting
+pnpm dev            # Watch and rebuild (recommended for development)
+pnpm build          # Build all packages for production
+pnpm lint          # Run code formatting and linting
 ```
 
 ## Architecture & Design Principles
@@ -184,57 +168,30 @@ Multi-tag publishing approach:
 
 ## Contributing
 
-### Code Style
+We welcome contributions! Here's how to get started:
 
-This project uses Biome for code formatting and linting:
-
-```bash
-# Check and fix code style
-pnpm check
-
-# Just check without fixing
-pnpm check --write=false
-```
-
-### Commit Convention
-
-We follow conventional commits:
+### Quick Setup
 
 ```bash
-feat: add new package management command
-fix: resolve version increment edge case
-docs: update CLI documentation
-refactor: simplify configuration loading
-test: add version management tests
+# Clone and setup
+git clone https://github.com/funish/basis.git
+cd basis
+pnpm install
+pnpm dev
+
+# Test your changes
+cd packages/basis && pnpm link --global
+basis --version
 ```
 
-### Pull Request Process
+### Development Workflow
 
-1. **Fork** the repository
-2. **Create** a feature branch: `git checkout -b feature/amazing-feature`
-3. **Develop** your changes with tests
-4. **Test** locally: `pnpm build && cd playground && basis <your-command>`
-5. **Commit** using conventional commits
-6. **Push** and create a Pull Request
+1. **Code**: Follow our standards in [CONTRIBUTING.md](./CONTRIBUTING.md)
+2. **Test**: `pnpm build && basis <your-command>`
+3. **Commit**: Use conventional commits (`feat:`, `fix:`, etc.)
+4. **Submit**: Create a Pull Request
 
-### Testing Changes
-
-```bash
-# Build and test your changes
-pnpm build
-
-# Link for global testing
-cd packages/basis
-pnpm link --global
-
-# Test in a separate directory
-mkdir test-project
-cd test-project
-basis init
-basis add some-package
-basis version patch
-basis publish --dry-run
-```
+> 📋 **For detailed guidelines, principles, and best practices**, see our [Contributing Guide](./CONTRIBUTING.md).
 
 ## Release Process
 
@@ -298,15 +255,18 @@ export default defineBasisConfig({
 });
 ```
 
-## Philosophy
+## Project Philosophy
 
-### Design Principles
+Basis follows core principles that guide its design and development:
 
 1. **Unified Interface**: One CLI for all development tasks
 2. **Tool Agnostic**: Don't replace tools, orchestrate them
 3. **Auto-Detection**: Minimize configuration, maximize convenience
 4. **Modern Stack**: Built on proven unjs ecosystem
 5. **Developer Experience**: Focus on productivity and simplicity
+6. **Balanced Output**: Silent process with clear completion status
+
+> 📋 **For detailed development principles and coding standards**, see our [Contributing Guide](./CONTRIBUTING.md).
 
 ### Why Unjs Ecosystem?
 

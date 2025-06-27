@@ -43,7 +43,12 @@ export function getPackageManagerCommands(packageManager: string) {
     case "bun":
       return {
         outdated: "bun outdated",
-        audit: "bun audit --audit-level moderate",
+        audit: null, // Bun doesn't have built-in audit command yet
+      };
+    case "deno":
+      return {
+        outdated: null, // Deno doesn't have traditional outdated check
+        audit: null, // Deno doesn't have audit command
       };
     default: // npm
       return {

@@ -10,6 +10,9 @@ export default defineBasisConfig({
       format:
         "pnpm prettier --write --list-different . --ignore-path .gitignore",
     },
+    dependencies: {
+      allowedLicenses: ["MIT", "ISC", "BSD-2-Clause", "BSD-3-Clause"],
+    },
   },
   git: {
     hooks: {

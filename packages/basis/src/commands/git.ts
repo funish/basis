@@ -39,13 +39,10 @@ export const git = defineCommand({
       },
       async run() {
         const cwd = process.cwd();
-        consola.start("Setting up Git configuration...");
 
         const success = await setupGitConfig(cwd);
 
-        if (success) {
-          consola.success("Git configuration completed successfully!");
-        } else {
+        if (!success) {
           consola.error("Git configuration failed");
           process.exit(1);
         }
@@ -59,13 +56,10 @@ export const git = defineCommand({
       },
       async run() {
         const cwd = process.cwd();
-        consola.start("Setting up Git hooks...");
 
         const success = await setupGitHooks(cwd);
 
-        if (success) {
-          consola.success("Git hooks setup completed successfully!");
-        } else {
+        if (!success) {
           consola.error("Git hooks setup failed");
           process.exit(1);
         }
@@ -91,8 +85,6 @@ export const git = defineCommand({
       },
       async run({ args }) {
         const cwd = process.cwd();
-        consola.start("Removing Git hooks...");
-
         const hooksToRemove =
           args.hooks && typeof args.hooks === "string"
             ? [args.hooks]
@@ -109,9 +101,7 @@ export const git = defineCommand({
           updateConfig,
         });
 
-        if (success) {
-          consola.success("Git hooks removed successfully!");
-        } else {
+        if (!success) {
           consola.error("Git hooks removal failed");
           process.exit(1);
         }
@@ -137,7 +127,6 @@ export const git = defineCommand({
       },
       async run({ args }) {
         const cwd = process.cwd();
-        consola.start("Resetting Git configuration...");
 
         const keepUser =
           typeof args["keep-user"] === "boolean" ? args["keep-user"] : true;
@@ -147,9 +136,7 @@ export const git = defineCommand({
             : false;
         const success = await resetGitConfig(cwd, keepUser, { updateConfig });
 
-        if (success) {
-          consola.success("Git configuration reset successfully!");
-        } else {
+        if (!success) {
           consola.error("Git configuration reset failed");
           process.exit(1);
         }
@@ -163,13 +150,10 @@ export const git = defineCommand({
       },
       async run() {
         const cwd = process.cwd();
-        consola.start("Initializing Git repository...");
 
         const success = await initGitRepo(cwd);
 
-        if (success) {
-          consola.success("Git repository initialized successfully!");
-        } else {
+        if (!success) {
           consola.error("Git initialization failed");
           process.exit(1);
         }
@@ -183,13 +167,10 @@ export const git = defineCommand({
       },
       async run() {
         const cwd = process.cwd();
-        consola.start("Validating commit message...");
 
         const success = await lintCommitMessage(cwd);
 
-        if (success) {
-          consola.success("Commit message validation passed!");
-        } else {
+        if (!success) {
           consola.error("Commit message validation failed");
           process.exit(1);
         }

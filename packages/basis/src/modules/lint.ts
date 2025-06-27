@@ -75,12 +75,13 @@ export async function lintStaged(
   const files = getStagedFiles();
 
   if (files.length === 0) {
-    consola.info("No staged files to lint");
     return true;
   }
 
   if (Object.keys(stagedConfig).length === 0) {
-    consola.warn("No staged lint configuration found");
+    consola.warn(
+      "No staged lint configuration found. Add lint.staged section to your basis.config.ts",
+    );
     return true;
   }
 
@@ -121,10 +122,12 @@ export async function lintStaged(
       }
 
       matchedFiles.forEach((file) => processedFiles.add(file));
-      consola.success(`${pattern}`);
     } catch (error) {
       hasErrors = true;
-      consola.error(`${pattern} failed:`, error);
+      consola.error(
+        `Lint pattern '${pattern}' failed. Please fix the issues and try again:`,
+        error,
+      );
     }
   }
 
@@ -145,7 +148,9 @@ export async function lintProject(
   const projectConfig = loadedConfig.lint?.project || {};
 
   if (Object.keys(projectConfig).length === 0) {
-    consola.warn("No project lint configuration found");
+    consola.warn(
+      "No project lint configuration found. Add lint.project section to your basis.config.ts",
+    );
     return true;
   }
 
@@ -163,11 +168,12 @@ export async function lintProject(
         stdio: "inherit",
         cwd: cwd,
       });
-
-      consola.success(`${pattern}`);
     } catch (error) {
       hasErrors = true;
-      consola.error(`${pattern} failed:`, error);
+      consola.error(
+        `Project lint pattern '${pattern}' failed. Please fix the issues and try again:`,
+        error,
+      );
     }
   }
 
@@ -210,45 +216,225 @@ export async function lintDependencies(
       );
 
       if (blockedFound.length > 0) {
-        consola.error(`Blocked packages found: ${blockedFound.join(", ")}`);
+        consola.error(
+          `Blocked packages found: ${blockedFound.join(", ")}. Please remove these packages from your dependencies.`,
+        );
         hasIssues = true;
-      } else {
-        consola.success("No blocked packages found");
       }
     }
 
     // Check outdated dependencies
     if (depsConfig.checkOutdated) {
-      try {
-        execSync(commands.outdated, { cwd, stdio: "pipe" });
-        consola.success("All dependencies are up to date");
-      } catch (error) {
-        consola.warn("⚠ Some dependencies are outdated:", error);
-        // Don't mark as error since outdated deps are warnings
+      if (commands.outdated) {
+        try {
+          execSync(commands.outdated, { cwd, stdio: "pipe" });
+        } catch (error) {
+          consola.warn("Some dependencies are outdated:", error);
+          // Don't mark as error since outdated deps are warnings
+        }
+      } else {
+        consola.warn(`Outdated check not available for ${packageManager}`);
       }
     }
 
     // Check for security vulnerabilities
     if (depsConfig.checkSecurity) {
-      try {
-        execSync(commands.audit, { cwd, stdio: "pipe" });
-        consola.success("No security vulnerabilities found");
-      } catch (error) {
-        consola.error("Security vulnerabilities detected:", error);
-        hasIssues = true;
+      if (commands.audit) {
+        try {
+          execSync(commands.audit, { cwd, stdio: "pipe" });
+        } catch (error) {
+          consola.error("Security vulnerabilities detected:", error);
+          hasIssues = true;
+        }
+      } else {
+        consola.warn(`Security audit not available for ${packageManager}`);
       }
     }
 
     // Check allowed licenses
     if (depsConfig.allowedLicenses && depsConfig.allowedLicenses.length > 0) {
-      consola.info(
-        "📝 License checking requires manual review or additional tooling",
-      );
-      // License checking would require parsing node_modules or using tools like license-checker
+      const { hasIssues: licenseIssues, invalidLicenses } =
+        await checkPackageLicenses(cwd, depsConfig.allowedLicenses);
+
+      if (licenseIssues) {
+        consola.error("Packages with invalid licenses found:");
+        invalidLicenses.forEach((license) => consola.error(`  ${license}`));
+        hasIssues = true;
+      }
     }
   } catch (error) {
     consola.error("Failed to check dependencies:", error);
     hasIssues = true;
+  }
+
+  return !hasIssues;
+}
+
+/**
+ * Check required files exist
+ */
+async function checkRequiredFiles(
+  cwd: string,
+  requiredFiles: string[],
+): Promise<boolean> {
+  if (requiredFiles.length === 0) return true;
+
+  // Batch check all required files
+  const fileChecks = await Promise.all(
+    requiredFiles.map(async (file) => ({
+      file,
+      exists: await fileExists(resolve(cwd, file)),
+    })),
+  );
+
+  const missingFiles = fileChecks.filter((check) => !check.exists);
+
+  if (missingFiles.length > 0) {
+    missingFiles.forEach(({ file }) => {
+      consola.error(`Required file missing: ${file}`);
+    });
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Check required directories exist
+ */
+async function checkRequiredDirectories(
+  cwd: string,
+  requiredDirs: string[],
+): Promise<boolean> {
+  if (requiredDirs.length === 0) return true;
+
+  // Batch check all required directories
+  const dirChecks = await Promise.all(
+    requiredDirs.map(async (dir) => ({
+      dir,
+      exists: await fileExists(resolve(cwd, dir)),
+    })),
+  );
+
+  const missingDirs = dirChecks.filter((check) => !check.exists);
+
+  if (missingDirs.length > 0) {
+    missingDirs.forEach(({ dir }) => {
+      consola.error(`Required directory missing: ${dir}`);
+    });
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Check file naming conventions
+ */
+async function checkFileNaming(
+  cwd: string,
+  pathPattern: string,
+  filePattern: string,
+): Promise<boolean> {
+  const fileRegex = new RegExp(filePattern);
+  const matchingFiles = await getProjectFiles(cwd, [pathPattern]);
+
+  const invalidFiles = matchingFiles.filter((file) => {
+    const fileName = file.split("/").pop() || "";
+    return !fileRegex.test(fileName);
+  });
+
+  if (invalidFiles.length > 0) {
+    consola.error(
+      `Files with invalid naming in ${pathPattern}: ${invalidFiles.slice(0, 3).join(", ")}${invalidFiles.length > 3 ? "..." : ""}`,
+    );
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Check directory naming conventions
+ */
+async function checkDirectoryNaming(
+  cwd: string,
+  pathPattern: string,
+  dirPattern: string,
+): Promise<boolean> {
+  const dirRegex = new RegExp(dirPattern);
+  const dirs = new Set<string>();
+
+  // Get all directories that match the path pattern
+  const allDirs = await getProjectFiles(cwd, [
+    pathPattern.replace(/\/\*\*?$/, ""),
+  ]);
+
+  const directoryPaths = allDirs.filter(async (path) => {
+    const fullPath = resolve(cwd, path);
+    try {
+      const stats = await import("node:fs/promises").then((fs) =>
+        fs.stat(fullPath),
+      );
+      return stats.isDirectory();
+    } catch {
+      return false;
+    }
+  });
+
+  // Check each directory name against the pattern
+  for (const dirPath of await Promise.all(directoryPaths)) {
+    if (dirPath) {
+      const dirName = dirPath.split("/").pop() || "";
+      if (!dirRegex.test(dirName)) {
+        dirs.add(dirPath);
+      }
+    }
+  }
+
+  if (dirs.size > 0) {
+    consola.error(
+      `Directories with invalid naming in ${pathPattern}: ${Array.from(dirs).slice(0, 3).join(", ")}`,
+    );
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Check naming conventions for files and directories
+ */
+async function checkNamingConventions(
+  cwd: string,
+  namingRules: Array<{
+    path: string;
+    files?: string;
+    directories?: string;
+    description?: string;
+  }>,
+): Promise<boolean> {
+  let hasIssues = false;
+
+  for (const namingRule of namingRules) {
+    const {
+      path: pathPattern,
+      files: filePattern,
+      directories: dirPattern,
+      description,
+    } = namingRule;
+
+    consola.start(`Checking naming rule: ${description || pathPattern}`);
+
+    if (filePattern) {
+      const fileCheck = await checkFileNaming(cwd, pathPattern, filePattern);
+      if (!fileCheck) hasIssues = true;
+    }
+
+    if (dirPattern) {
+      const dirCheck = await checkDirectoryNaming(cwd, pathPattern, dirPattern);
+      if (!dirCheck) hasIssues = true;
+    }
   }
 
   return !hasIssues;
@@ -273,91 +459,29 @@ export async function lintStructure(
 
   // Check required files
   if (structureConfig.requiredFiles) {
-    for (const file of structureConfig.requiredFiles) {
-      const filePath = resolve(cwd, file);
-      if (!(await fileExists(filePath))) {
-        consola.error(`Required file missing: ${file}`);
-        hasIssues = true;
-      } else {
-        consola.success(`Required file found: ${file}`);
-      }
-    }
+    const filesCheck = await checkRequiredFiles(
+      cwd,
+      structureConfig.requiredFiles,
+    );
+    if (!filesCheck) hasIssues = true;
   }
 
   // Check required directories
   if (structureConfig.requiredDirs) {
-    for (const dir of structureConfig.requiredDirs) {
-      const dirPath = resolve(cwd, dir);
-      if (!(await fileExists(dirPath))) {
-        consola.error(`Required directory missing: ${dir}`);
-        hasIssues = true;
-      } else {
-        consola.success(`Required directory found: ${dir}`);
-      }
-    }
+    const dirsCheck = await checkRequiredDirectories(
+      cwd,
+      structureConfig.requiredDirs,
+    );
+    if (!dirsCheck) hasIssues = true;
   }
 
-  // Check naming conventions for different paths
+  // Check naming conventions
   if (structureConfig.naming && structureConfig.naming.length > 0) {
-    for (const namingRule of structureConfig.naming) {
-      const {
-        path: pathPattern,
-        files: filePattern,
-        directories: dirPattern,
-        description,
-      } = namingRule;
-
-      consola.start(`Checking naming rule: ${description || pathPattern}`);
-
-      // Get files matching the path pattern
-      const matchingFiles = await getProjectFiles(cwd, [pathPattern]);
-
-      if (filePattern) {
-        const fileRegex = new RegExp(filePattern);
-        const invalidFiles = matchingFiles.filter((file) => {
-          const fileName = file.split("/").pop() || "";
-          return !fileRegex.test(fileName);
-        });
-
-        if (invalidFiles.length > 0) {
-          consola.error(
-            `Files with invalid naming in ${pathPattern}: ${invalidFiles.slice(0, 3).join(", ")}${invalidFiles.length > 3 ? "..." : ""}`,
-          );
-          hasIssues = true;
-        } else if (matchingFiles.length > 0) {
-          consola.success(
-            `All files in ${pathPattern} follow naming convention`,
-          );
-        }
-      }
-
-      if (dirPattern) {
-        // Check directory naming for paths that contain directories
-        const dirRegex = new RegExp(dirPattern);
-        const dirs = new Set<string>();
-
-        matchingFiles.forEach((file) => {
-          const pathParts = file.split("/");
-          pathParts.pop(); // Remove filename
-          pathParts.forEach((part) => dirs.add(part));
-        });
-
-        const invalidDirs = Array.from(dirs).filter(
-          (dir) => !dirRegex.test(dir),
-        );
-
-        if (invalidDirs.length > 0) {
-          consola.error(
-            `Directories with invalid naming in ${pathPattern}: ${invalidDirs.slice(0, 3).join(", ")}`,
-          );
-          hasIssues = true;
-        } else if (dirs.size > 0) {
-          consola.success(
-            `All directories in ${pathPattern} follow naming convention`,
-          );
-        }
-      }
-    }
+    const namingCheck = await checkNamingConventions(
+      cwd,
+      structureConfig.naming,
+    );
+    if (!namingCheck) hasIssues = true;
   }
 
   return !hasIssues;
@@ -380,38 +504,40 @@ export async function lintDocs(
 
   consola.start("Checking documentation...");
 
-  // Check README
-  if (docsConfig.checkReadme !== false) {
-    const readmeFiles = ["README.md", "README.rst", "README.txt", "readme.md"];
-    const hasReadme = await Promise.all(
-      readmeFiles.map((file) => fileExists(resolve(cwd, file))),
-    );
+  // Batch check all documentation files
+  const docFilesToCheck: Array<{
+    type: string;
+    files: string[];
+    required: boolean;
+  }> = [];
 
-    if (!hasReadme.some((exists) => exists)) {
-      consola.error("No README file found");
-      hasIssues = true;
-    } else {
-      consola.success("README file found");
-    }
+  if (docsConfig.checkReadme !== false) {
+    docFilesToCheck.push({
+      type: "README",
+      files: ["README.md", "README.rst", "README.txt", "readme.md"],
+      required: true,
+    });
   }
 
-  // Check CHANGELOG
   if (docsConfig.checkChangelog) {
-    const changelogFiles = [
-      "CHANGELOG.md",
-      "CHANGELOG.rst",
-      "HISTORY.md",
-      "changelog.md",
-    ];
-    const hasChangelog = await Promise.all(
-      changelogFiles.map((file) => fileExists(resolve(cwd, file))),
+    docFilesToCheck.push({
+      type: "CHANGELOG",
+      files: ["CHANGELOG.md", "CHANGELOG.rst", "HISTORY.md", "changelog.md"],
+      required: true,
+    });
+  }
+
+  // Perform all file checks in parallel
+  for (const { type, files, required } of docFilesToCheck) {
+    const fileExistenceChecks = await Promise.all(
+      files.map((file) => fileExists(resolve(cwd, file))),
     );
 
-    if (!hasChangelog.some((exists) => exists)) {
-      consola.error("No CHANGELOG file found");
+    const hasAnyFile = fileExistenceChecks.some((exists) => exists);
+
+    if (required && !hasAnyFile) {
+      consola.error(`No ${type} file found`);
       hasIssues = true;
-    } else {
-      consola.success("CHANGELOG file found");
     }
   }
 
@@ -441,9 +567,59 @@ export async function lintAll(cwd = process.cwd()): Promise<boolean> {
   );
 
   if (failures.length === 0) {
-    consola.success("All lint checks passed!");
     return true;
   }
   consola.error(`${failures.length} lint check(s) failed`);
   return false;
+}
+
+/**
+ * Check package licenses using license-checker approach
+ */
+async function checkPackageLicenses(
+  cwd: string,
+  allowedLicenses: string[],
+): Promise<{ hasIssues: boolean; invalidLicenses: string[] }> {
+  try {
+    // Try to get license info from package.json files in node_modules
+    const packageJsonFiles = await fg(
+      ["node_modules/*/package.json", "node_modules/@*/*/package.json"],
+      {
+        cwd,
+        onlyFiles: true,
+        absolute: true,
+      },
+    );
+
+    const invalidLicenses: string[] = [];
+    const checkedPackages = new Set<string>();
+
+    for (const pkgPath of packageJsonFiles) {
+      try {
+        const pkg = await readPackageJSON(pkgPath);
+        if (!pkg.name || checkedPackages.has(pkg.name)) continue;
+
+        checkedPackages.add(pkg.name);
+
+        if (pkg.license) {
+          const license = Array.isArray(pkg.license)
+            ? pkg.license.join(", ")
+            : pkg.license;
+          if (!allowedLicenses.some((allowed) => license.includes(allowed))) {
+            invalidLicenses.push(`${pkg.name}: ${license}`);
+          }
+        }
+      } catch {
+        // Skip invalid package.json files
+      }
+    }
+
+    return {
+      hasIssues: invalidLicenses.length > 0,
+      invalidLicenses,
+    };
+  } catch (error) {
+    consola.warn("Failed to check licenses:", error);
+    return { hasIssues: false, invalidLicenses: [] };
+  }
 }

@@ -72,6 +72,12 @@ importers:
         specifier: 7.7.0
         version: 7.7.0
 
+  playground:
+    devDependencies:
+      "@funish/basis":
+        specifier: ^0.0.3
+        version: 0.0.3
+
 packages:
   "@babel/code-frame@7.27.1":
     resolution:
@@ -413,6 +419,13 @@ packages:
     engines: { node: ">=18" }
     cpu: [x64]
     os: [win32]
+
+  "@funish/basis@0.0.3":
+    resolution:
+      {
+        integrity: sha512-jhs40/VTl6nNotGaGTtk7PORDG6Ouhm2rcNjnwcOup9rKlNEz1ej67NJ6/n1vqXQYnfNc/dKGadBm0636TKxKg==,
+      }
+    hasBin: true
 
   "@jridgewell/sourcemap-codec@1.5.0":
     resolution:
@@ -1939,6 +1952,21 @@ snapshots:
 
   "@esbuild/win32-x64@0.25.5":
     optional: true
+
+  "@funish/basis@0.0.3":
+    dependencies:
+      c12: 3.0.4(magicast@0.3.5)
+      citty: 0.1.6
+      consola: 3.4.2
+      defu: 6.1.4
+      fast-glob: 3.3.3
+      ini: 5.0.0
+      magicast: 0.3.5
+      micromatch: 4.0.8
+      nypm: 0.6.0
+      pathe: 2.0.3
+      pkg-types: 2.1.0
+      semver: 7.7.2
 
   "@jridgewell/sourcemap-codec@1.5.0": {}
 

@@ -4,7 +4,9 @@
 [![npm version](https://img.shields.io/npm/v/@funish/basis.svg)](https://www.npmjs.com/package/@funish/basis)
 [![npm downloads](https://img.shields.io/npm/dm/@funish/basis.svg)](https://www.npmjs.com/package/@funish/basis)
 
-> A unified development toolkit with CLI for package management, versioning, publishing, linting, and git hooks management for JavaScript/TypeScript projects, powered by [Funish](https://funish.net/).
+> A unified development toolkit with CLI for package management, versioning, publishing, linting, and git hooks management for JavaScript/TypeScript projects.
+
+**🧑‍💻 Contributing?** See the [monorepo documentation](https://github.com/funish/basis) for development setup and contribution guidelines.
 
 ## What is Basis?
 
@@ -432,46 +434,36 @@ basis git hooks            # Unified git hooks
 ## API
 
 ```ts
-import { createBasis, defineBasisConfig } from "@funish/basis";
+import {
+  createBasis,
+  defineBasisConfig,
+  // Import module functions directly for maximum flexibility
+  init,
+  setupGit,
+  lintAll,
+  updatePackageVersion,
+  publishPackage,
+} from "@funish/basis";
 
-// Programmatic usage
+// Programmatic usage with Basis class (for config caching and workflows)
 const basis = createBasis(process.cwd());
 
-// Initialize configuration
-await basis.init({ force: false, skipGitCheck: false, skipInstall: false });
+// High-level workflows
+await basis.setup({ force: false, skipGitCheck: false, skipInstall: false }); // init + git setup
+await basis.release({ patch: true }, { stable: true }); // lint + version + publish
 
-// Package management
-await basis.installDependencies();
-await basis.addDependency("lodash");
-await basis.removeDependency("lodash");
-await basis.runScript("build");
+// Configuration management
+const config = await basis.getConfig(); // Cached config loading
+await basis.reloadConfig(); // Force reload
+basis.setCwd("/different/path"); // Change working directory
 
-// Version management
-await basis.updateVersion({ patch: true });
-await basis.updateVersion({ version: "2.0.0" });
-
-// Publishing
-await basis.publishPackage({ stable: true });
-await basis.publishPackage({ tag: "beta" });
-
-// Linting
-await basis.lintStaged();
-await basis.lintProject();
-await basis.lintDependencies();
-await basis.lintStructure();
-await basis.lintDocs();
-
-// Git management
-await basis.setupGit(); // Setup everything
-await basis.setupGitConfig(); // Setup config only
-await basis.setupGitHooks(); // Setup hooks only
-await basis.removeGitHooks(); // Remove hooks (keep config)
-await basis.removeGitHooks(true); // Remove hooks + config file
-await basis.resetGitConfig(); // Reset config (keep user)
-await basis.resetGitConfig(false); // Reset config (remove all)
-await basis.resetGitConfig(true, true); // Reset + remove from config file
-await basis.initGitRepo(); // Initialize repository
-await basis.lintCommitMessage(); // Validate commit message
+// Or use module functions directly for more control
+const cwd = process.cwd();
+await init(cwd, { force: true });
+await setupGit(cwd);
+await lintAll(cwd);
+await updatePackageVersion(cwd, { patch: true });
+await publishPackage(cwd, { stable: true });
 ```
 
 ## License
