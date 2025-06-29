@@ -15,6 +15,18 @@ import type {
 import { fileExists, loadConfig } from "../utils";
 
 /**
+ * Check if git command is available
+ */
+function isGitAvailable(): boolean {
+  try {
+    execSync("git --version", { stdio: "pipe" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Remove git configuration from basis config
  */
 async function removeGitFromBasisConfig(
@@ -161,6 +173,12 @@ export async function lintCommitMessage(
   cwd = process.cwd(),
   config?: GitConfig["commitMsg"],
 ): Promise<boolean> {
+  // Check if git is available
+  if (!isGitAvailable()) {
+    consola.warn("Git command not available, skipping commit message linting");
+    return true; // Skip linting if git is not available
+  }
+
   const { config: loadedConfig } = await loadConfig({
     cwd,
     overrides: config ? { git: { commitMsg: config } } : undefined,
@@ -464,6 +482,12 @@ export async function setupGitHooks(
  * Initialize Git repository
  */
 export async function initGitRepo(cwd = process.cwd()): Promise<boolean> {
+  // Check if git is available
+  if (!isGitAvailable()) {
+    consola.warn("Git command not available, cannot initialize repository");
+    return false;
+  }
+
   try {
     // Check if already a Git repository
     try {
