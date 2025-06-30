@@ -18,9 +18,6 @@ export const defaultConfig: BasisConfig = {
     structure: {
       requiredFiles: ["package.json"],
     },
-    docs: {
-      checkReadme: true,
-    },
   },
   git: {
     hooks: {},
@@ -48,9 +45,6 @@ export const defaultConfig: BasisConfig = {
     autoInitGit: true,
     skipGitCheck: false,
     force: false,
-  },
-  packageManager: {
-    autoDetect: true,
   },
   version: {
     tagPrefix: "v",

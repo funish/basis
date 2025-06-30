@@ -5,7 +5,6 @@
 export interface BasisConfig {
   lint?: LintConfig;
   git?: GitConfig;
-  packageManager?: PackageManagerConfig;
   version?: VersionConfig;
   publish?: PublishConfig;
 }
@@ -250,15 +249,6 @@ export type ValidGitHook = (typeof VALID_GIT_HOOKS)[number];
 export type GitConfigValue = string | number | boolean;
 export type GitConfigSection = Record<string, GitConfigValue>;
 export type GitConfigData = Record<string, GitConfigSection>;
-
-export interface PackageManagerConfig {
-  /** Preferred package manager (aligned with nypm support) */
-  preferred?: "npm" | "yarn" | "pnpm" | "bun" | "deno";
-  /** Auto-detect package manager from project */
-  autoDetect?: boolean;
-  /** NPM registry URL */
-  registry?: string;
-}
 
 export interface VersionConfig {
   /** Git tag prefix */

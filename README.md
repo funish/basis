@@ -236,9 +236,6 @@ export default defineBasisConfig({
       "*.{ts,js,json}": "pnpm oxlint --fix --fix-suggestions",
     },
   },
-  packageManager: {
-    autoDetect: true,
-  },
   version: {
     tagPrefix: "v",
     autoCommit: true,

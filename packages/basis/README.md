@@ -306,12 +306,6 @@ export default defineBasisConfig({
     force: false, // Force operation even if git unavailable
   },
 
-  // Package manager configuration (auto-detected)
-  packageManager: {
-    autoDetect: true, // Auto-detect package manager
-    registry: "https://registry.npmjs.org/",
-  },
-
   // Version management configuration
   version: {
     tagPrefix: "v", // Git tag prefix
