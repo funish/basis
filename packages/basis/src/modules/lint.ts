@@ -1,4 +1,5 @@
 import { execSync } from "node:child_process";
+import { writeFile, mkdir } from "node:fs/promises";
 import { consola } from "consola";
 import fg from "fast-glob";
 import micromatch from "micromatch";
@@ -186,12 +187,14 @@ export async function lintProject(
 export async function lintDependencies(
   cwd = process.cwd(),
   config?: LintConfig["dependencies"],
+  fix = false,
 ): Promise<boolean> {
   const { config: loadedConfig } = await loadConfig({
     cwd,
     overrides: config ? { lint: { dependencies: config } } : undefined,
   });
   const depsConfig = loadedConfig.lint?.dependencies || {};
+  const fixConfig = loadedConfig.lint?.fix?.dependencies || {};
 
   let hasIssues = false;
 
@@ -216,10 +219,25 @@ export async function lintDependencies(
       );
 
       if (blockedFound.length > 0) {
-        consola.error(
-          `Blocked packages found: ${blockedFound.join(", ")}. Please remove these packages from your dependencies.`,
-        );
-        hasIssues = true;
+        if (fix && fixConfig.removeBlocked && commands.remove) {
+          consola.start(
+            `Removing blocked packages: ${blockedFound.join(", ")}`,
+          );
+          try {
+            for (const pkg of blockedFound) {
+              execSync(`${commands.remove} ${pkg}`, { cwd, stdio: "inherit" });
+            }
+            consola.success(`Removed ${blockedFound.length} blocked packages`);
+          } catch (error) {
+            consola.error("Failed to remove blocked packages:", error);
+            hasIssues = true;
+          }
+        } else {
+          consola.error(
+            `Blocked packages found: ${blockedFound.join(", ")}. Please remove these packages from your dependencies.`,
+          );
+          hasIssues = true;
+        }
       }
     }
 
@@ -229,8 +247,19 @@ export async function lintDependencies(
         try {
           execSync(commands.outdated, { cwd, stdio: "pipe" });
         } catch (error) {
-          consola.warn("Some dependencies are outdated:", error);
-          // Don't mark as error since outdated deps are warnings
+          if (fix && fixConfig.updateOutdated && commands.update) {
+            consola.start("Updating outdated dependencies...");
+            try {
+              execSync(commands.update, { cwd, stdio: "inherit" });
+              consola.success("Dependencies updated");
+            } catch (updateError) {
+              consola.error("Failed to update dependencies:", updateError);
+              hasIssues = true;
+            }
+          } else {
+            consola.warn("Some dependencies are outdated:", error);
+            // Don't mark as error since outdated deps are warnings
+          }
         }
       } else {
         consola.warn(`Outdated check not available for ${packageManager}`);
@@ -243,8 +272,19 @@ export async function lintDependencies(
         try {
           execSync(commands.audit, { cwd, stdio: "pipe" });
         } catch (error) {
-          consola.error("Security vulnerabilities detected:", error);
-          hasIssues = true;
+          if (fix && fixConfig.fixSecurity && commands.auditFix) {
+            consola.start("Fixing security vulnerabilities...");
+            try {
+              execSync(commands.auditFix, { cwd, stdio: "inherit" });
+              consola.success("Security fixes applied");
+            } catch (fixError) {
+              consola.error("Failed to fix security issues:", fixError);
+              hasIssues = true;
+            }
+          } else {
+            consola.error("Security vulnerabilities detected:", error);
+            hasIssues = true;
+          }
         }
       } else {
         consola.warn(`Security audit not available for ${packageManager}`);
@@ -276,6 +316,7 @@ export async function lintDependencies(
 async function checkRequiredFiles(
   cwd: string,
   requiredFiles: string[],
+  createMissingFiles = false,
 ): Promise<boolean> {
   if (requiredFiles.length === 0) return true;
 
@@ -290,10 +331,25 @@ async function checkRequiredFiles(
   const missingFiles = fileChecks.filter((check) => !check.exists);
 
   if (missingFiles.length > 0) {
-    missingFiles.forEach(({ file }) => {
-      consola.error(`Required file missing: ${file}`);
-    });
-    return false;
+    if (createMissingFiles) {
+      consola.start(
+        `Creating missing files: ${missingFiles.map((m) => m.file).join(", ")}`,
+      );
+      try {
+        for (const { file } of missingFiles) {
+          await writeFile(resolve(cwd, file), "", "utf8");
+        }
+        consola.success(`Created ${missingFiles.length} missing files`);
+      } catch (error) {
+        consola.error("Failed to create missing files:", error);
+        return false;
+      }
+    } else {
+      missingFiles.forEach(({ file }) => {
+        consola.error(`Required file missing: ${file}`);
+      });
+      return false;
+    }
   }
 
   return true;
@@ -305,6 +361,7 @@ async function checkRequiredFiles(
 async function checkRequiredDirectories(
   cwd: string,
   requiredDirs: string[],
+  createMissingDirs = false,
 ): Promise<boolean> {
   if (requiredDirs.length === 0) return true;
 
@@ -319,10 +376,25 @@ async function checkRequiredDirectories(
   const missingDirs = dirChecks.filter((check) => !check.exists);
 
   if (missingDirs.length > 0) {
-    missingDirs.forEach(({ dir }) => {
-      consola.error(`Required directory missing: ${dir}`);
-    });
-    return false;
+    if (createMissingDirs) {
+      consola.start(
+        `Creating missing directories: ${missingDirs.map((m) => m.dir).join(", ")}`,
+      );
+      try {
+        for (const { dir } of missingDirs) {
+          await mkdir(resolve(cwd, dir), { recursive: true });
+        }
+        consola.success(`Created ${missingDirs.length} missing directories`);
+      } catch (error) {
+        consola.error("Failed to create missing directories:", error);
+        return false;
+      }
+    } else {
+      missingDirs.forEach(({ dir }) => {
+        consola.error(`Required directory missing: ${dir}`);
+      });
+      return false;
+    }
   }
 
   return true;
@@ -446,12 +518,14 @@ async function checkNamingConventions(
 export async function lintStructure(
   cwd = process.cwd(),
   config?: LintConfig["structure"],
+  fix = false,
 ): Promise<boolean> {
   const { config: loadedConfig } = await loadConfig({
     cwd,
     overrides: config ? { lint: { structure: config } } : undefined,
   });
   const structureConfig = loadedConfig.lint?.structure || {};
+  const fixConfig = loadedConfig.lint?.fix?.structure || {};
 
   let hasIssues = false;
 
@@ -462,6 +536,7 @@ export async function lintStructure(
     const filesCheck = await checkRequiredFiles(
       cwd,
       structureConfig.requiredFiles,
+      fix && fixConfig.createMissingFiles,
     );
     if (!filesCheck) hasIssues = true;
   }
@@ -471,6 +546,7 @@ export async function lintStructure(
     const dirsCheck = await checkRequiredDirectories(
       cwd,
       structureConfig.requiredDirs,
+      fix && fixConfig.createMissingDirs,
     );
     if (!dirsCheck) hasIssues = true;
   }
@@ -493,12 +569,14 @@ export async function lintStructure(
 export async function lintDocs(
   cwd = process.cwd(),
   config?: LintConfig["docs"],
+  fix = false,
 ): Promise<boolean> {
   const { config: loadedConfig } = await loadConfig({
     cwd,
     overrides: config ? { lint: { docs: config } } : undefined,
   });
   const docsConfig = loadedConfig.lint?.docs || {};
+  const fixConfig = loadedConfig.lint?.fix?.docs || {};
 
   let hasIssues = false;
 
@@ -509,6 +587,8 @@ export async function lintDocs(
     type: string;
     files: string[];
     required: boolean;
+    fixEnabled: boolean;
+    createFile?: string;
   }> = [];
 
   if (docsConfig.checkReadme !== false) {
@@ -516,6 +596,8 @@ export async function lintDocs(
       type: "README",
       files: ["README.md", "README.rst", "README.txt", "readme.md"],
       required: true,
+      fixEnabled: fix && (fixConfig.generateReadme ?? false),
+      createFile: "README.md",
     });
   }
 
@@ -524,11 +606,19 @@ export async function lintDocs(
       type: "CHANGELOG",
       files: ["CHANGELOG.md", "CHANGELOG.rst", "HISTORY.md", "changelog.md"],
       required: true,
+      fixEnabled: fix && (fixConfig.generateChangelog ?? false),
+      createFile: "CHANGELOG.md",
     });
   }
 
   // Perform all file checks in parallel
-  for (const { type, files, required } of docFilesToCheck) {
+  for (const {
+    type,
+    files,
+    required,
+    fixEnabled,
+    createFile,
+  } of docFilesToCheck) {
     const fileExistenceChecks = await Promise.all(
       files.map((file) => fileExists(resolve(cwd, file))),
     );
@@ -536,8 +626,19 @@ export async function lintDocs(
     const hasAnyFile = fileExistenceChecks.some((exists) => exists);
 
     if (required && !hasAnyFile) {
-      consola.error(`No ${type} file found`);
-      hasIssues = true;
+      if (fixEnabled && createFile) {
+        consola.start(`Creating ${createFile}...`);
+        try {
+          await writeFile(resolve(cwd, createFile), "", "utf8");
+          consola.success(`Created ${createFile}`);
+        } catch (error) {
+          consola.error(`Failed to create ${createFile}:`, error);
+          hasIssues = true;
+        }
+      } else {
+        consola.error(`No ${type} file found`);
+        hasIssues = true;
+      }
     }
   }
 
@@ -547,7 +648,10 @@ export async function lintDocs(
 /**
  * Run all lint checks
  */
-export async function lintAll(cwd = process.cwd()): Promise<boolean> {
+export async function lintAll(
+  cwd = process.cwd(),
+  fix = false,
+): Promise<boolean> {
   const { config } = await loadConfig({ cwd });
   const lintConfig = config.lint || {};
 
@@ -555,9 +659,9 @@ export async function lintAll(cwd = process.cwd()): Promise<boolean> {
 
   const results = await Promise.allSettled([
     lintProject(cwd, lintConfig.project),
-    lintDependencies(cwd, lintConfig.dependencies),
-    lintStructure(cwd, lintConfig.structure),
-    lintDocs(cwd, lintConfig.docs),
+    lintDependencies(cwd, lintConfig.dependencies, fix),
+    lintStructure(cwd, lintConfig.structure, fix),
+    lintDocs(cwd, lintConfig.docs, fix),
   ]);
 
   const failures = results.filter(

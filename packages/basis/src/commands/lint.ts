@@ -46,6 +46,11 @@ export const lint = defineCommand({
       description: "Run all lint checks",
       default: false,
     },
+    fix: {
+      type: "boolean",
+      description: "Automatically fix issues where possible",
+      default: false,
+    },
   },
   async run({ args }) {
     const cwd = process.cwd();
@@ -65,7 +70,7 @@ export const lint = defineCommand({
 
     // Run all checks if --all flag is provided
     if (args.all) {
-      success = await lintAll(cwd);
+      success = await lintAll(cwd, args.fix);
     } else {
       // Run specific checks based on flags
       const checks: Array<() => Promise<boolean>> = [];
@@ -79,15 +84,15 @@ export const lint = defineCommand({
       }
 
       if (args.deps) {
-        checks.push(() => lintDependencies(cwd));
+        checks.push(() => lintDependencies(cwd, undefined, args.fix));
       }
 
       if (args.structure) {
-        checks.push(() => lintStructure(cwd));
+        checks.push(() => lintStructure(cwd, undefined, args.fix));
       }
 
       if (args.docs) {
-        checks.push(() => lintDocs(cwd));
+        checks.push(() => lintDocs(cwd, undefined, args.fix));
       }
 
       // Run all selected checks

@@ -45,6 +45,42 @@ export interface LintConfig {
     checkReadme?: boolean;
     checkChangelog?: boolean;
   };
+
+  // Auto-fix configuration
+  fix?: {
+    /** Enable automatic fixing for all supported issues */
+    autoFix?: boolean;
+
+    /** Dependency fix options */
+    dependencies?: {
+      /** Automatically remove blocked packages */
+      removeBlocked?: boolean;
+      /** Automatically update outdated dependencies */
+      updateOutdated?: boolean;
+      /** Attempt to fix security vulnerabilities */
+      fixSecurity?: boolean;
+      /** Ask for confirmation before making changes */
+      interactive?: boolean;
+    };
+
+    /** Structure fix options */
+    structure?: {
+      /** Automatically create missing required files */
+      createMissingFiles?: boolean;
+      /** Automatically create missing required directories */
+      createMissingDirs?: boolean;
+      /** Generate file templates for missing files */
+      generateTemplates?: boolean;
+    };
+
+    /** Documentation fix options */
+    docs?: {
+      /** Generate README.md template if missing */
+      generateReadme?: boolean;
+      /** Generate CHANGELOG.md template if missing */
+      generateChangelog?: boolean;
+    };
+  };
 }
 
 export interface GitConfig {

@@ -19,6 +19,7 @@ Basis is your **unified development toolkit** for modern JavaScript/TypeScript p
 - 🏷️ **Version Management**: Semantic versioning with automated git tagging and releases
 - 🚀 **Publishing**: Multi-tag publishing strategy with edge version tracking
 - 🔧 **Tool Agnostic Linting**: Not tied to specific linters - use ESLint, Oxlint, Biome, or any tool you prefer
+- 🛠️ **Auto-fix Issues**: Automatically fix dependencies, structure, and documentation issues
 - 🪝 **Smart Git Hooks**: Automatic git repository initialization and hook management
 - 💻 **Modern Stack**: Built on the unjs ecosystem (citty, consola, c12, nypm, semver)
 - 💪 **TypeScript First**: Full TypeScript support with excellent DX
@@ -155,6 +156,57 @@ basis lint --docs
 
 # Run all lint checks
 basis lint --all
+
+# Auto-fix issues (can be combined with any check)
+basis lint --deps --fix              # Check and fix dependency issues
+basis lint --structure --fix         # Check and fix structure issues
+basis lint --docs --fix             # Check and fix documentation issues
+basis lint --all --fix              # Check and fix all issues
+basis lint --staged --fix           # Note: --fix only works with --deps, --structure, --docs, --all
+```
+
+#### Auto-fix Features
+
+The `--fix` flag enables automatic fixing of common issues:
+
+**🔧 Dependency Fixes**:
+
+- **Remove blocked packages**: Automatically uninstall packages listed in `blockedPackages`
+- **Update outdated dependencies**: Use package manager's update command to fix outdated packages
+- **Fix security vulnerabilities**: Attempt to fix security issues using `npm audit fix` or equivalent
+
+**📁 Structure Fixes**:
+
+- **Create missing files**: Generate empty files for items in `requiredFiles`
+- **Create missing directories**: Generate directories for items in `requiredDirs`
+
+**📝 Documentation Fixes**:
+
+- **Generate README.md**: Create an empty README.md if missing
+- **Generate CHANGELOG.md**: Create an empty CHANGELOG.md if missing
+
+**Configuration**: All fix behaviors are controlled by the `lint.fix` configuration in your `basis.config.ts`:
+
+```ts
+export default defineBasisConfig({
+  lint: {
+    fix: {
+      dependencies: {
+        removeBlocked: true, // Enable automatic removal of blocked packages
+        updateOutdated: false, // Disable automatic updates (manual control)
+        fixSecurity: true, // Enable security fix attempts
+      },
+      structure: {
+        createMissingFiles: true, // Enable file creation
+        createMissingDirs: true, // Enable directory creation
+      },
+      docs: {
+        generateReadme: true, // Enable README generation
+        generateChangelog: false, // Disable CHANGELOG generation
+      },
+    },
+  },
+});
 ```
 
 ### Git Hooks Management
@@ -269,6 +321,25 @@ export default defineBasisConfig({
     project: {
       typecheck: "pnpm tsc --noEmit",
       "format-check": "pnpm prettier --check .",
+    },
+    // Auto-fix configuration
+    fix: {
+      // Dependency fix options
+      dependencies: {
+        removeBlocked: true, // Auto-remove blocked packages
+        updateOutdated: true, // Auto-update outdated dependencies
+        fixSecurity: true, // Auto-fix security vulnerabilities
+      },
+      // Structure fix options
+      structure: {
+        createMissingFiles: true, // Auto-create missing required files
+        createMissingDirs: true, // Auto-create missing required directories
+      },
+      // Documentation fix options
+      docs: {
+        generateReadme: true, // Auto-create README.md if missing
+        generateChangelog: true, // Auto-create CHANGELOG.md if missing
+      },
     },
   },
 
