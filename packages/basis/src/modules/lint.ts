@@ -591,7 +591,7 @@ export async function lintDocs(
     createFile?: string;
   }> = [];
 
-  if (docsConfig.checkReadme !== false) {
+  if (docsConfig.checkReadme) {
     docFilesToCheck.push({
       type: "README",
       files: ["README.md", "README.rst", "README.txt", "readme.md"],
