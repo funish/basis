@@ -46,8 +46,8 @@
   "devDependencies": {
     "@funish/basis": "workspace:*",
     "@prettier/plugin-oxc": "0.0.4",
-    "@types/node": "24.0.7",
-    "oxlint": "1.4.0",
+    "@types/node": "24.0.10",
+    "oxlint": "1.5.0",
     "prettier": "3.6.2",
     "unbuild": "3.5.0"
   },
