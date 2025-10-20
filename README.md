@@ -221,8 +221,8 @@ This monorepo uses its own basis configuration:
 export default defineBasisConfig({
   git: {
     hooks: {
-      "pre-commit": "basis lint --staged",
-      "commit-msg": "basis git lint-commit",
+      "pre-commit": "pnpm basis lint --staged",
+      "commit-msg": "pnpm basis git lint-commit",
     },
     config: {
       core: {

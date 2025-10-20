@@ -98,11 +98,10 @@ export async function lintStaged(
 
     if (matchedFiles.length === 0) continue;
 
-    consola.start(`Linting ${matchedFiles.length} files: ${pattern}`);
+    consola.start(`Running staged lint for pattern: ${pattern}`);
 
     try {
-      const fullCommand = `${command} ${matchedFiles.join(" ")}`;
-      execSync(fullCommand, {
+      execSync(command, {
         stdio: "inherit",
         cwd: cwd,
       });

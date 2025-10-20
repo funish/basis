@@ -16,8 +16,8 @@ export default defineBasisConfig({
   },
   git: {
     hooks: {
-      "pre-commit": "pnpm exec basis lint --staged",
-      "commit-msg": "pnpm exec basis git --lint-commit",
+      "pre-commit": "pnpm basis lint --staged",
+      "commit-msg": "pnpm basis git --lint-commit",
     },
     commitMsg: {},
   },

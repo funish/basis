@@ -275,8 +275,8 @@ export default defineBasisConfig({
   // See: https://github.com/funish/basis/tree/main/packages/basis#configuration
   git: {
     hooks: {
-      "pre-commit": "pnpm exec basis lint --staged", // Auto-adapts to your package manager
-      "commit-msg": "pnpm exec basis git --lint-commit",
+      "pre-commit": "pnpmbasis lint --staged", // Auto-adapts to your package manager
+      "commit-msg": "pnpmbasis git --lint-commit",
     },
   },
 });
@@ -347,8 +347,8 @@ export default defineBasisConfig({
   git: {
     // Hook commands
     hooks: {
-      "pre-commit": "pnpm exec basis lint --staged",
-      "commit-msg": "pnpm exec basis git --lint-commit",
+      "pre-commit": "pnpmbasis lint --staged",
+      "commit-msg": "pnpmbasis git --lint-commit",
     },
 
     // Commit message validation
