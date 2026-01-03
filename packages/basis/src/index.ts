@@ -7,7 +7,7 @@ export * from "./core";
 // Module functions
 export * from "./modules/git";
 export * from "./modules/init";
-export * from "./modules/lint";
+export * from "./modules/check";
 export * from "./modules/publish";
 export * from "./modules/version";
 

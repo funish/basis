@@ -1,6 +1,6 @@
 import { setupGit } from "./modules/git";
 import { init as initProject } from "./modules/init";
-import { lintAll } from "./modules/lint";
+import { checkAll } from "./modules/check";
 import { publishPackage } from "./modules/publish";
 import { updatePackageVersion } from "./modules/version";
 import type { BasisConfig, InitOptions, PublishOptions, VersionOptions } from "./types";
@@ -64,13 +64,13 @@ export class Basis {
   }
 
   /**
-   * Run complete release workflow (lint + version + publish)
+   * Run complete release workflow (check + version + publish)
    */
   async release(versionOptions: VersionOptions = {}, publishOptions: PublishOptions = {}) {
-    // Run all lint checks first
-    const lintSuccess = await lintAll(this.cwd);
-    if (!lintSuccess) {
-      throw new Error("Lint checks failed. Fix issues before releasing.");
+    // Run all checks first
+    const checkSuccess = await checkAll(this.cwd);
+    if (!checkSuccess) {
+      throw new Error("Checks failed. Fix issues before releasing.");
     }
 
     // Update version

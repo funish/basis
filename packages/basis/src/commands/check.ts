@@ -1,13 +1,13 @@
 import { defineCommand } from "citty";
 import { consola } from "consola";
 import {
-  lintAll,
-  lintDependencies,
-  lintDocs,
-  lintProject,
-  lintStaged,
-  lintStructure,
-} from "../modules/lint";
+  checkAll,
+  checkDependencies,
+  checkDocs,
+  checkProject,
+  checkStaged,
+  checkStructure,
+} from "../modules/check";
 
 export const check = defineCommand({
   meta: {
@@ -62,29 +62,29 @@ export const check = defineCommand({
 
     // Run all checks if --all flag is provided
     if (args.all) {
-      success = await lintAll(cwd, args.fix);
+      success = await checkAll(cwd, args.fix);
     } else {
       // Run specific checks based on flags
       const checks: Array<() => Promise<boolean>> = [];
 
       if (args.staged) {
-        checks.push(() => lintStaged(cwd));
+        checks.push(() => checkStaged(cwd));
       }
 
       if (args.project) {
-        checks.push(() => lintProject(cwd));
+        checks.push(() => checkProject(cwd));
       }
 
       if (args.deps) {
-        checks.push(() => lintDependencies(cwd, undefined, args.fix));
+        checks.push(() => checkDependencies(cwd, undefined, args.fix));
       }
 
       if (args.structure) {
-        checks.push(() => lintStructure(cwd, undefined, args.fix));
+        checks.push(() => checkStructure(cwd, undefined, args.fix));
       }
 
       if (args.docs) {
-        checks.push(() => lintDocs(cwd, undefined, args.fix));
+        checks.push(() => checkDocs(cwd, undefined, args.fix));
       }
 
       // Run all selected checks

@@ -56,9 +56,9 @@ export async function getProjectFiles(
 }
 
 /**
- * Lint staged files
+ * Check staged files
  */
-export async function lintStaged(
+export async function checkStaged(
   cwd = process.cwd(),
   config?: CheckConfig["staged"],
 ): Promise<boolean> {
@@ -127,9 +127,9 @@ export async function lintStaged(
 }
 
 /**
- * Lint entire project using commands (similar to staged but for all project files)
+ * Check entire project using commands (similar to staged but for all project files)
  */
-export async function lintProject(
+export async function checkProject(
   cwd = process.cwd(),
   config?: CheckConfig["project"],
 ): Promise<boolean> {
@@ -171,7 +171,7 @@ export async function lintProject(
 /**
  * Check dependencies
  */
-export async function lintDependencies(
+export async function checkDependencies(
   cwd = process.cwd(),
   config?: CheckConfig["dependencies"],
   fix = false,
@@ -480,7 +480,7 @@ async function checkNamingConventions(
 /**
  * Check project structure
  */
-export async function lintStructure(
+export async function checkStructure(
   cwd = process.cwd(),
   config?: CheckConfig["structure"],
   fix = false,
@@ -526,7 +526,7 @@ export async function lintStructure(
 /**
  * Check documentation
  */
-export async function lintDocs(
+export async function checkDocs(
   cwd = process.cwd(),
   config?: CheckConfig["docs"],
   fix = false,
@@ -597,17 +597,17 @@ export async function lintDocs(
 }
 
 /**
- * Run all lint checks
+ * Run all checks
  */
-export async function lintAll(cwd = process.cwd(), fix = false): Promise<boolean> {
+export async function checkAll(cwd = process.cwd(), fix = false): Promise<boolean> {
   const { config } = await loadConfig({ cwd });
   const checkConfig = config.check || {};
 
   const results = await Promise.allSettled([
-    lintProject(cwd, checkConfig.project),
-    lintDependencies(cwd, checkConfig.dependencies, fix),
-    lintStructure(cwd, checkConfig.structure, fix),
-    lintDocs(cwd, checkConfig.docs, fix),
+    checkProject(cwd, checkConfig.project),
+    checkDependencies(cwd, checkConfig.dependencies, fix),
+    checkStructure(cwd, checkConfig.structure, fix),
+    checkDocs(cwd, checkConfig.docs, fix),
   ]);
 
   const failures = results.filter(
