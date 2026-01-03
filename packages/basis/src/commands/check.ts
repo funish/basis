@@ -1,0 +1,104 @@
+import { defineCommand } from "citty";
+import { consola } from "consola";
+import {
+  lintAll,
+  lintDependencies,
+  lintDocs,
+  lintProject,
+  lintStaged,
+  lintStructure,
+} from "../modules/lint";
+
+export const check = defineCommand({
+  meta: {
+    name: "check",
+    description: "Run comprehensive project quality checks (dependencies, structure, docs, etc.)",
+  },
+  args: {
+    staged: {
+      type: "boolean",
+      description: "Lint only staged files using configured commands",
+      default: false,
+    },
+    project: {
+      type: "boolean",
+      description: "Run project-wide lint commands",
+      default: false,
+    },
+    deps: {
+      type: "boolean",
+      description: "Check dependencies (outdated, security, blocked packages)",
+      default: false,
+    },
+    structure: {
+      type: "boolean",
+      description: "Check project structure (required files/dirs, naming conventions)",
+      default: false,
+    },
+    docs: {
+      type: "boolean",
+      description: "Check documentation (README, CHANGELOG)",
+      default: false,
+    },
+    all: {
+      type: "boolean",
+      description: "Run all check commands",
+      default: false,
+    },
+    fix: {
+      type: "boolean",
+      description: "Automatically fix issues where possible",
+      default: false,
+    },
+  },
+  async run({ args }) {
+    const cwd = process.cwd();
+    let success = true;
+
+    // If no specific flags are provided, run staged files lint by default
+    if (!args.staged && !args.project && !args.deps && !args.structure && !args.docs && !args.all) {
+      args.staged = true;
+    }
+
+    // Run all checks if --all flag is provided
+    if (args.all) {
+      success = await lintAll(cwd, args.fix);
+    } else {
+      // Run specific checks based on flags
+      const checks: Array<() => Promise<boolean>> = [];
+
+      if (args.staged) {
+        checks.push(() => lintStaged(cwd));
+      }
+
+      if (args.project) {
+        checks.push(() => lintProject(cwd));
+      }
+
+      if (args.deps) {
+        checks.push(() => lintDependencies(cwd, undefined, args.fix));
+      }
+
+      if (args.structure) {
+        checks.push(() => lintStructure(cwd, undefined, args.fix));
+      }
+
+      if (args.docs) {
+        checks.push(() => lintDocs(cwd, undefined, args.fix));
+      }
+
+      // Run all selected checks
+      for (const check of checks) {
+        const result = await check();
+        if (!result) {
+          success = false;
+        }
+      }
+    }
+
+    if (!success) {
+      consola.error("Some checks failed");
+      process.exit(1);
+    }
+  },
+});

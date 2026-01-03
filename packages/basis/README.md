@@ -136,34 +136,52 @@ basis publish --dry-run
 basis publish --skip-build --skip-tests
 ```
 
-### Linting
+### Code Quality
 
 ```bash
-# Lint staged files
-basis lint --staged
+# Run linters (runs all configured linters in order)
+basis lint                   # Run all linters
+basis lint --fix             # Run linters with auto-fix
 
-# Run project-wide linting
-basis lint --project
+# Run formatters (runs all configured formatters in order)
+basis fmt                    # Format code
+basis fmt --check            # Check formatting without modifying
 
-# Check dependencies
-basis lint --deps
-
-# Check project structure
-basis lint --structure
-
-# Check documentation
-basis lint --docs
-
-# Run all lint checks
-basis lint --all
-
-# Auto-fix issues (can be combined with any check)
-basis lint --deps --fix              # Check and fix dependency issues
-basis lint --structure --fix         # Check and fix structure issues
-basis lint --docs --fix             # Check and fix documentation issues
-basis lint --all --fix              # Check and fix all issues
-basis lint --staged --fix           # Note: --fix only works with --deps, --structure, --docs, --all
+# Run project quality checks
+basis check --staged         # Check staged files using configured commands
+basis check --project        # Run project-wide check commands
+basis check --deps           # Check dependencies
+basis check --structure      # Check project structure
+basis check --docs           # Check documentation
+basis check --all            # Run all checks
+basis check --fix            # Auto-fix issues where supported
 ```
+
+### Check Commands Explained
+
+**📝 Staged Files Check** (`--staged`):
+Runs configured commands on staged git files. Useful for pre-commit hooks.
+
+**🔍 Project Check** (`--project`):
+Runs project-wide quality commands defined in `check.project`.
+
+**📦 Dependencies Check** (`--deps`):
+
+- Checks for outdated dependencies
+- Scans for security vulnerabilities
+- Validates package licenses
+- Checks for blocked packages
+
+**🏗️ Structure Check** (`--structure`):
+
+- Verifies required files exist
+- Verifies required directories exist
+- Validates file/directory naming conventions
+
+**📚 Documentation Check** (`--docs`):
+
+- Checks for README.md
+- Checks for CHANGELOG.md
 
 #### Auto-fix Features
 
@@ -171,25 +189,25 @@ The `--fix` flag enables automatic fixing of common issues:
 
 **🔧 Dependency Fixes**:
 
-- **Remove blocked packages**: Automatically uninstall packages listed in `blockedPackages`
-- **Update outdated dependencies**: Use package manager's update command to fix outdated packages
-- **Fix security vulnerabilities**: Attempt to fix security issues using `npm audit fix` or equivalent
+- Remove blocked packages
+- Update outdated dependencies
+- Fix security vulnerabilities
 
 **📁 Structure Fixes**:
 
-- **Create missing files**: Generate empty files for items in `requiredFiles`
-- **Create missing directories**: Generate directories for items in `requiredDirs`
+- Create missing required files
+- Create missing required directories
 
 **📝 Documentation Fixes**:
 
-- **Generate README.md**: Create an empty README.md if missing
-- **Generate CHANGELOG.md**: Create an empty CHANGELOG.md if missing
+- Generate README.md template
+- Generate CHANGELOG.md template
 
-**Configuration**: All fix behaviors are controlled by the `lint.fix` configuration in your `basis.config.ts`:
+**Configuration**: All fix behaviors are controlled by the `check.fix` configuration in your `basis.config.ts`:
 
 ```ts
 export default defineBasisConfig({
-  lint: {
+  check: {
     fix: {
       dependencies: {
         removeBlocked: true, // Enable automatic removal of blocked packages
@@ -287,12 +305,22 @@ export default defineBasisConfig({
 const { defineBasisConfig } = require("@funish/basis");
 
 module.exports = defineBasisConfig({
-  // Configure your project here
-  // See: https://github.com/funish/basis/tree/main/packages/basis#configuration
+  lint: [
+    { runner: "oxlint" },
+  ],
+  fmt: [
+    { runner: "prettier" },
+  ],
+  check: {
+    staged: {
+      "*.{js,jsx}": "basis lint",
+      "*.{js,jsx,json,md}": "basis fmt",
+    },
+  },
   git: {
     hooks: {
-      "pre-commit": "npx basis lint --staged", // Auto-adapts to your package manager
-      "commit-msg": "npx basis git --lint-commit",
+      "pre-commit": "basis check --staged", // Auto-adapts to your package manager
+      "commit-msg": "basis git --lint-commit",
     },
   },
 });
@@ -309,36 +337,83 @@ Here's a complete configuration with all available options:
 import { defineBasisConfig } from "@funish/basis";
 
 export default defineBasisConfig({
-  // Linting configuration
-  lint: {
-    // Staged files linting patterns
-    staged: {
-      "*.{ts,tsx,js,jsx}": "pnpm eslint --fix",
-      "*.{json,md,yml,yaml}": "pnpm prettier --write",
-      "*.vue": "pnpm vue-tsc --noEmit && pnpm eslint --fix",
+  // Code linters (run in order)
+  lint: [
+    {
+      runner: "oxlint",
+      runnerOptions: {
+        paths: ["src"],
+      },
     },
-    // Project-wide linting commands
+    {
+      runner: "tsc",
+      runnerOptions: {
+        skipLibCheck: true,
+      },
+    },
+  ],
+
+  // Code formatters (run in order)
+  fmt: [
+    {
+      runner: "prettier",
+      runnerOptions: {
+        paths: ["docs"],
+      },
+    },
+  ],
+
+  // Project quality checks
+  check: {
+    // Staged files check patterns
+    staged: {
+      "*.{ts,tsx,js,jsx}": "basis lint",
+      "*.{json,md,yml,yaml}": "basis fmt",
+      "*.vue": "basis lint && basis fmt",
+    },
+    // Project-wide check commands
     project: {
-      typecheck: "pnpm tsc --noEmit",
-      "format-check": "pnpm prettier --check .",
+      typecheck: "basis lint",
+      "format-check": "basis fmt --check",
+    },
+    // Dependencies check
+    dependencies: {
+      checkOutdated: true,
+      checkSecurity: true,
+      allowedLicenses: ["MIT", "ISC", "Apache-2.0"],
+      blockedPackages: ["deprecated-package"],
+    },
+    // Project structure check
+    structure: {
+      requiredFiles: ["package.json", "README.md"],
+      requiredDirs: ["src", "tests"],
+      naming: [
+        {
+          path: "src/**/*.ts",
+          files: "^[a-z][a-z0-9-]*\\.ts$",
+          description: "Source files must use kebab-case",
+        },
+      ],
+    },
+    // Documentation check
+    docs: {
+      checkReadme: true,
+      checkChangelog: true,
     },
     // Auto-fix configuration
     fix: {
-      // Dependency fix options
       dependencies: {
-        removeBlocked: true, // Auto-remove blocked packages
-        updateOutdated: true, // Auto-update outdated dependencies
-        fixSecurity: true, // Auto-fix security vulnerabilities
+        removeBlocked: true,
+        updateOutdated: false,
+        fixSecurity: true,
       },
-      // Structure fix options
       structure: {
-        createMissingFiles: true, // Auto-create missing required files
-        createMissingDirs: true, // Auto-create missing required directories
+        createMissingFiles: true,
+        createMissingDirs: true,
       },
-      // Documentation fix options
       docs: {
-        generateReadme: true, // Auto-create README.md if missing
-        generateChangelog: true, // Auto-create CHANGELOG.md if missing
+        generateReadme: false,
+        generateChangelog: false,
       },
     },
   },
@@ -347,8 +422,8 @@ export default defineBasisConfig({
   git: {
     // Hook commands
     hooks: {
-      "pre-commit": "pnpmbasis lint --staged",
-      "commit-msg": "pnpmbasis git --lint-commit",
+      "pre-commit": "basis check --staged",
+      "commit-msg": "basis git --lint-commit",
     },
 
     // Commit message validation
@@ -372,33 +447,33 @@ export default defineBasisConfig({
     },
 
     // Options
-    autoInitGit: true, // Auto-initialize git repo if not found
-    skipGitCheck: false, // Skip git command availability check
-    force: false, // Force operation even if git unavailable
+    autoInitGit: true,
+    skipGitCheck: false,
+    force: false,
   },
 
   // Version management configuration
   version: {
-    tagPrefix: "v", // Git tag prefix
-    autoCommit: true, // Auto commit version changes
-    autoTag: true, // Auto create git tag
-    autoPush: false, // Manual push control
-    prereleaseId: "edge", // Default prerelease identifier
+    tagPrefix: "v",
+    autoCommit: true,
+    autoTag: true,
+    autoPush: false,
+    prereleaseId: "edge",
     commitMessage: "chore: release v{version}",
   },
 
   // Publishing configuration
   publish: {
-    defaultTag: "edge", // Always published tag
-    stableTag: "latest", // Stable release tag
-    access: "public", // Package access level
+    defaultTag: "edge",
+    stableTag: "latest",
+    access: "public",
     registry: "https://registry.npmjs.org/",
-    buildCommand: "pnpm build", // Build before publish
-    testCommand: "pnpm test", // Test before publish
-    checkGitClean: true, // Check git status before publish
-    checkTests: true, // Run tests before publish
-    autoGitPush: true, // Push after publish
-    createGitTag: true, // Create git tag after publish
+    buildCommand: "pnpm build",
+    testCommand: "pnpm test",
+    checkGitClean: true,
+    checkTests: true,
+    autoGitPush: true,
+    createGitTag: true,
   },
 });
 ```
@@ -496,7 +571,7 @@ git config --global ...     # Git configuration
 basis add package           # Unified package management
 basis version patch         # Unified version management
 basis publish --tag beta   # Unified publishing
-basis lint --staged        # Unified linting
+basis check --staged       # Unified quality checks
 basis git setup            # Unified git setup
 ```
 
@@ -537,4 +612,4 @@ await publishPackage(cwd, { stable: true });
 
 ## License
 
-[MIT](../../LICENSE) © [Funish](https://funish.net/)
+[MIT](../../LICENSE) © [Funish](https://www.funish.net/)

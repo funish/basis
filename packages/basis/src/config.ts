@@ -11,7 +11,16 @@ export function defineBasisConfig(config: BasisConfig): BasisConfig {
  * Default configuration
  */
 export const defaultConfig: BasisConfig = {
-  lint: {
+  lint: [
+    {
+      runner: "oxlint",
+      // runnerOptions: {
+      //   paths: undefined,  // Let tools use default behavior
+      // },
+    },
+  ],
+
+  check: {
     dependencies: {
       checkSecurity: true,
     },
@@ -19,6 +28,15 @@ export const defaultConfig: BasisConfig = {
       requiredFiles: ["package.json"],
     },
   },
+
+  fmt: [
+    {
+      runner: "oxfmt",
+      // runnerOptions: {
+      //   paths: undefined,  // Let tools use default behavior
+      // },
+    },
+  ],
   git: {
     hooks: {},
     config: {

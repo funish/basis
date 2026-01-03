@@ -3,12 +3,7 @@ import { init as initProject } from "./modules/init";
 import { lintAll } from "./modules/lint";
 import { publishPackage } from "./modules/publish";
 import { updatePackageVersion } from "./modules/version";
-import type {
-  BasisConfig,
-  InitOptions,
-  PublishOptions,
-  VersionOptions,
-} from "./types";
+import type { BasisConfig, InitOptions, PublishOptions, VersionOptions } from "./types";
 import { loadConfig } from "./utils";
 
 /**
@@ -71,10 +66,7 @@ export class Basis {
   /**
    * Run complete release workflow (lint + version + publish)
    */
-  async release(
-    versionOptions: VersionOptions = {},
-    publishOptions: PublishOptions = {},
-  ) {
+  async release(versionOptions: VersionOptions = {}, publishOptions: PublishOptions = {}) {
     // Run all lint checks first
     const lintSuccess = await lintAll(this.cwd);
     if (!lintSuccess) {

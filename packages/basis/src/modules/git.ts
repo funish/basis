@@ -153,14 +153,8 @@ export function validateCommitMessage(
     errors.push("Scope is required");
   }
 
-  if (
-    parsed.scope &&
-    allowedScopes.length > 0 &&
-    !allowedScopes.includes(parsed.scope)
-  ) {
-    errors.push(
-      `Invalid scope '${parsed.scope}'. Allowed: ${allowedScopes.join(", ")}`,
-    );
+  if (parsed.scope && allowedScopes.length > 0 && !allowedScopes.includes(parsed.scope)) {
+    errors.push(`Invalid scope '${parsed.scope}'. Allowed: ${allowedScopes.join(", ")}`);
   }
 
   return { valid: errors.length === 0, errors };
@@ -241,9 +235,7 @@ async function createGitConfigBackup(cwd: string): Promise<string | null> {
 /**
  * Read Git configuration from .git/config using ini parser
  */
-export async function readGitConfig(
-  cwd = process.cwd(),
-): Promise<GitConfigData> {
+export async function readGitConfig(cwd = process.cwd()): Promise<GitConfigData> {
   const gitConfigPath = resolve(cwd, ".git/config");
 
   if (!(await fileExists(gitConfigPath))) {
@@ -263,10 +255,7 @@ export async function readGitConfig(
 /**
  * Write Git configuration to .git/config using ini format
  */
-export async function writeGitConfig(
-  config: GitConfigData,
-  cwd = process.cwd(),
-): Promise<void> {
+export async function writeGitConfig(config: GitConfigData, cwd = process.cwd()): Promise<void> {
   const gitConfigPath = resolve(cwd, ".git/config");
 
   try {
@@ -297,10 +286,7 @@ export async function writeGitConfig(
 /**
  * Check if config values already exist in Git config
  */
-function isConfigUpToDate(
-  existingConfig: GitConfigData,
-  ourConfig: GitConfig["config"],
-): boolean {
+function isConfigUpToDate(existingConfig: GitConfigData, ourConfig: GitConfig["config"]): boolean {
   if (!ourConfig) return true;
 
   for (const [section, sectionConfig] of Object.entries(ourConfig)) {
@@ -447,22 +433,45 @@ export async function setupGitHooks(
   }
 
   let success = true;
+  let hooksAlreadySetup = true;
 
   // Setup each configured hook
   for (const [hookName, hookConfig] of Object.entries(hooksConfig)) {
     const hookPath = resolve(hooksDir, hookName);
 
     try {
+      // Check if hook already exists and has the expected content
+      if (await fileExists(hookPath)) {
+        const existingContent = await readFile(hookPath, "utf-8");
+
+        // Generate expected content
+        let expectedContent = "#!/bin/sh\n\n";
+        if (typeof hookConfig === "string") {
+          expectedContent += `${hookConfig}\n`;
+        } else if (hookConfig && typeof hookConfig === "object" && "commands" in hookConfig) {
+          const commands = (hookConfig as { commands: string[] }).commands;
+          expectedContent += `${commands.join("\n")}\n`;
+        }
+
+        // If content matches, skip this hook
+        if (existingContent.trim() === expectedContent.trim()) {
+          continue; // Already setup, skip
+        }
+
+        // Content differs, need to update
+        hooksAlreadySetup = false;
+      } else {
+        // Hook doesn't exist yet
+        hooksAlreadySetup = false;
+      }
+
+      // Write hook content
       let hookContent = "#!/bin/sh\n\n";
 
       if (typeof hookConfig === "string") {
         // Simple command string
         hookContent += `${hookConfig}\n`;
-      } else if (
-        hookConfig &&
-        typeof hookConfig === "object" &&
-        "commands" in hookConfig
-      ) {
+      } else if (hookConfig && typeof hookConfig === "object" && "commands" in hookConfig) {
         // Multiple commands
         const commands = (hookConfig as { commands: string[] }).commands;
         hookContent += `${commands.join("\n")}\n`;
@@ -473,6 +482,11 @@ export async function setupGitHooks(
       consola.error(`Failed to setup ${hookName} hook:`, error);
       success = false;
     }
+  }
+
+  // If all hooks were already setup, provide feedback
+  if (success && hooksAlreadySetup && Object.keys(hooksConfig).length > 0) {
+    consola.info("Git hooks already setup, skipping...");
   }
 
   return success;
@@ -512,15 +526,85 @@ export async function setupGit(cwd = process.cwd()): Promise<boolean> {
   const { config } = await loadConfig({ cwd });
   const gitConfig = config.git || {};
 
+  // Quick check: see if everything is already setup
+  const gitConfigSettings = gitConfig.config || {};
+  const hooksConfig = gitConfig.hooks || {};
+
+  // Skip if both config and hooks are empty
+  if (Object.keys(gitConfigSettings).length === 0 && Object.keys(hooksConfig).length === 0) {
+    return true;
+  }
+
+  // Check Git config
+  let configUpToDate = false;
+  if (Object.keys(gitConfigSettings).length > 0) {
+    try {
+      const existingConfig = await readGitConfig(cwd);
+      configUpToDate = isConfigUpToDate(existingConfig, gitConfigSettings);
+    } catch {
+      // If we can't read config, assume it needs setup
+      configUpToDate = false;
+    }
+  } else {
+    configUpToDate = true; // No config to apply
+  }
+
+  // Check Git hooks
+  let hooksUpToDate = false;
+  if (Object.keys(hooksConfig).length > 0) {
+    const hooksDir = resolve(cwd, ".git/hooks");
+    hooksUpToDate = true;
+
+    // Check each hook
+    for (const [hookName, hookConfig] of Object.entries(hooksConfig)) {
+      const hookPath = resolve(hooksDir, hookName);
+
+      try {
+        if (await fileExists(hookPath)) {
+          const existingContent = await readFile(hookPath, "utf-8");
+
+          // Generate expected content
+          let expectedContent = "#!/bin/sh\n\n";
+          if (typeof hookConfig === "string") {
+            expectedContent += `${hookConfig}\n`;
+          } else if (hookConfig && typeof hookConfig === "object" && "commands" in hookConfig) {
+            const commands = (hookConfig as { commands: string[] }).commands;
+            expectedContent += `${commands.join("\n")}\n`;
+          }
+
+          // If any hook doesn't match, hooks are not up to date
+          if (existingContent.trim() !== expectedContent.trim()) {
+            hooksUpToDate = false;
+            break;
+          }
+        } else {
+          // Hook doesn't exist
+          hooksUpToDate = false;
+          break;
+        }
+      } catch {
+        hooksUpToDate = false;
+        break;
+      }
+    }
+  } else {
+    hooksUpToDate = true; // No hooks to apply
+  }
+
+  // If both are up to date, skip setup
+  if (configUpToDate && hooksUpToDate) {
+    consola.info("Git setup already completed, skipping...");
+    return true;
+  }
+
+  // Run setup
   const results = await Promise.allSettled([
     setupGitConfig(cwd, gitConfig.config),
     setupGitHooks(cwd, gitConfig.hooks),
   ]);
 
   const failures = results.filter(
-    (result) =>
-      result.status === "rejected" ||
-      (result.status === "fulfilled" && !result.value),
+    (result) => result.status === "rejected" || (result.status === "fulfilled" && !result.value),
   );
 
   if (failures.length === 0) {

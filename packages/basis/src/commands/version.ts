@@ -49,10 +49,7 @@ export default defineCommand({
         if (versionComponents.includes(versionArg)) {
           // It's a version component to increment
           options[
-            versionArg as keyof Pick<
-              VersionOptions,
-              "patch" | "minor" | "major" | "prerelease"
-            >
+            versionArg as keyof Pick<VersionOptions, "patch" | "minor" | "major" | "prerelease">
           ] = true;
         } else {
           // Check if it's a valid version number using semver
@@ -70,9 +67,7 @@ export default defineCommand({
       }
 
       const result = await updatePackageVersion(cwd, options);
-      consola.success(
-        `Version updated: ${result.oldVersion} → ${result.newVersion}`,
-      );
+      consola.success(`Version updated: ${result.oldVersion} → ${result.newVersion}`);
 
       if (result.tagName) {
         consola.info(`Git tag created: ${result.tagName}`);

@@ -51,24 +51,38 @@ export default defineCommand({
         }
 
         // Lint configuration
-        if (config.lint) {
+        if (config.lint && config.lint.length > 0) {
           consola.log("");
           consola.log("📝 Lint:");
+          for (const linter of config.lint) {
+            consola.log(`  Runner: ${linter.runner}`);
+          }
+        }
 
-          if (config.lint.staged) {
+        // Formatter configuration
+        if (config.fmt && config.fmt.length > 0) {
+          consola.log("");
+          consola.log("✨ Format:");
+          for (const formatter of config.fmt) {
+            consola.log(`  Runner: ${formatter.runner}`);
+          }
+        }
+
+        // Check configuration
+        if (config.check) {
+          consola.log("");
+          consola.log("🔍 Check:");
+
+          if (config.check.staged) {
             consola.log("  Staged files:");
-            for (const [pattern, command] of Object.entries(
-              config.lint.staged,
-            )) {
+            for (const [pattern, command] of Object.entries(config.check.staged)) {
               consola.log(`    ${pattern}: ${command}`);
             }
           }
 
-          if (config.lint.project) {
+          if (config.check.project) {
             consola.log("  Project:");
-            for (const [pattern, command] of Object.entries(
-              config.lint.project,
-            )) {
+            for (const [pattern, command] of Object.entries(config.check.project)) {
               consola.log(`    ${pattern}: ${command}`);
             }
           }
@@ -82,9 +96,7 @@ export default defineCommand({
           if (config.git.commitMsg) {
             consola.log("  Commit message:");
             if (config.git.commitMsg.types) {
-              consola.log(
-                `    Types: ${config.git.commitMsg.types.join(", ")}`,
-              );
+              consola.log(`    Types: ${config.git.commitMsg.types.join(", ")}`);
             }
             if (config.git.commitMsg.maxLength) {
               consola.log(`    Max length: ${config.git.commitMsg.maxLength}`);

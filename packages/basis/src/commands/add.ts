@@ -46,9 +46,7 @@ export default defineCommand({
   },
   async run({ args }) {
     try {
-      const packages = Array.isArray(args.packages)
-        ? args.packages
-        : [args.packages];
+      const packages = Array.isArray(args.packages) ? args.packages : [args.packages];
 
       const options = {
         cwd: args.cwd,

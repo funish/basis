@@ -2,14 +2,50 @@
   "name": "@funish/basis",
   "version": "0.1.2",
   "description": "A unified development toolkit with CLI for package management, versioning, publishing, linting, and git hooks management for JavaScript/TypeScript projects.",
-  "main": "dist/index.mjs",
-  "types": "dist/index.d.ts",
-  "files": [
-    "dist"
+  "keywords": [
+    "basis",
+    "c12",
+    "citty",
+    "cli",
+    "code-quality",
+    "consola",
+    "developer-experience",
+    "development-toolkit",
+    "git-hooks",
+    "javascript",
+    "linting",
+    "modern-development",
+    "npm-publish",
+    "nypm",
+    "package-management",
+    "semantic-versioning",
+    "semver",
+    "typescript",
+    "unjs",
+    "version-management"
   ],
+  "homepage": "https://github.com/funish/basis#readme",
+  "bugs": {
+    "url": "https://github.com/funish/basis/issues"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Funish",
+    "email": "root@funish.net",
+    "url": "https://www.funish.net/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/funish/basis.git"
+  },
   "bin": {
     "basis": "dist/cli.mjs"
   },
+  "files": [
+    "dist"
+  ],
+  "main": "dist/index.mjs",
+  "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.mjs",
@@ -24,42 +60,6 @@
     "dev": "unbuild --stub",
     "prepack": "unbuild"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/funish/basis.git"
-  },
-  "keywords": [
-    "basis",
-    "development-toolkit",
-    "cli",
-    "package-management",
-    "version-management",
-    "npm-publish",
-    "semantic-versioning",
-    "linting",
-    "git-hooks",
-    "typescript",
-    "javascript",
-    "developer-experience",
-    "code-quality",
-    "modern-development",
-    "unjs",
-    "nypm",
-    "semver",
-    "citty",
-    "consola",
-    "c12"
-  ],
-  "author": {
-    "name": "Funish",
-    "email": "official@funish.net",
-    "url": "https://funish.net/"
-  },
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/funish/basis/issues"
-  },
-  "homepage": "https://github.com/funish/basis#readme",
   "dependencies": {
     "c12": "3.0.4",
     "citty": "0.1.6",

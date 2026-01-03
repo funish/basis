@@ -1,14 +1,27 @@
 import { defineBasisConfig } from "@funish/basis";
 
 export default defineBasisConfig({
-  lint: {
+  lint: [
+    {
+      runner: "oxlint",
+    },
+    {
+      runner: "tsc",
+    },
+  ],
+  fmt: [
+    {
+      runner: "oxfmt",
+    },
+  ],
+  check: {
     staged: {
-      "*": "pnpm lint",
+      "*.{ts,tsx,js,jsx}": "basis lint",
+      "*.{ts,tsx,js,jsx,json,md,yml,yaml}": "basis fmt",
     },
     project: {
-      check: "pnpm oxlint --fix --fix-suggestions",
-      format:
-        "pnpm prettier --write --list-different . --ignore-path .gitignore --plugin=@prettier/plugin-oxc",
+      lint: "basis lint",
+      format: "basis fmt",
     },
     dependencies: {
       allowedLicenses: ["MIT", "ISC", "BSD-2-Clause", "BSD-3-Clause"],
@@ -16,7 +29,7 @@ export default defineBasisConfig({
   },
   git: {
     hooks: {
-      "pre-commit": "pnpm basis lint --staged",
+      "pre-commit": "pnpm basis check --staged",
       "commit-msg": "pnpm basis git --lint-commit",
     },
     commitMsg: {},

@@ -1,16 +1,8 @@
 import { execSync } from "node:child_process";
 import { consola } from "consola";
-import {
-  readPackageJSON,
-  resolvePackageJSON,
-  writePackageJSON,
-} from "pkg-types";
+import { readPackageJSON, resolvePackageJSON, writePackageJSON } from "pkg-types";
 import semver from "semver";
-import type {
-  VersionConfig,
-  VersionOptions,
-  VersionUpdateResult,
-} from "../types";
+import type { VersionConfig, VersionOptions, VersionUpdateResult } from "../types";
 import { loadConfig } from "../utils";
 
 /**
@@ -43,9 +35,7 @@ function calculateNewVersion(
   // Determine preid: use provided preid, or current prerelease tag, or default from config
   const preid =
     options.preid ||
-    (currentPrerelease && typeof currentPrerelease[0] === "string"
-      ? currentPrerelease[0]
-      : null) ||
+    (currentPrerelease && typeof currentPrerelease[0] === "string" ? currentPrerelease[0] : null) ||
     versionConfig.prereleaseId ||
     "edge";
 

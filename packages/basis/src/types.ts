@@ -3,7 +3,9 @@
 // ===============================================
 
 export interface BasisConfig {
-  lint?: LintConfig;
+  lint?: LinterConfig;
+  check?: CheckConfig;
+  fmt?: FormatConfig;
   git?: GitConfig;
   version?: VersionConfig;
   publish?: PublishConfig;
@@ -13,14 +15,64 @@ export interface BasisConfig {
 // Module Configuration Types
 // ===============================================
 
-export interface LintConfig {
-  // Code quality checks for staged files
+/**
+ * Single linter configuration
+ */
+export interface LinterInstanceConfig {
+  /**
+   * Linter runner to use
+   */
+  runner: "oxlint" | "eslint" | "tsc";
+
+  /**
+   * Linter runner options
+   */
+  runnerOptions?: {
+    /**
+     * Files or directories to lint
+     * Defaults to current directory if not specified
+     */
+    paths?: string[];
+
+    /**
+     * Enable auto-fix
+     */
+    fix?: boolean;
+
+    /**
+     * Custom rules configuration
+     */
+    rules?: Record<string, any>;
+
+    /**
+     * Additional options specific to each linter
+     */
+    [key: string]: any;
+  };
+}
+
+/**
+ * Code linting configuration (array of linters)
+ */
+export type LinterConfig = LinterInstanceConfig[];
+
+/**
+ * Project quality checks configuration
+ */
+export interface CheckConfig {
+  /**
+   * Code quality checks for staged files
+   */
   staged?: Record<string, string>;
 
-  // Project-wide commands (similar to staged but for entire project)
+  /**
+   * Project-wide commands (similar to staged but for entire project)
+   */
   project?: Record<string, string>;
 
-  // Dependencies checks
+  /**
+   * Dependencies checks
+   */
   dependencies?: {
     checkOutdated?: boolean;
     checkSecurity?: boolean;
@@ -28,7 +80,9 @@ export interface LintConfig {
     blockedPackages?: string[];
   };
 
-  // Project structure checks
+  /**
+   * Project structure checks
+   */
   structure?: {
     requiredFiles?: string[];
     requiredDirs?: string[];
@@ -40,13 +94,17 @@ export interface LintConfig {
     }>;
   };
 
-  // Documentation checks
+  /**
+   * Documentation checks
+   */
   docs?: {
     checkReadme?: boolean;
     checkChangelog?: boolean;
   };
 
-  // Auto-fix configuration
+  /**
+   * Auto-fix configuration
+   */
   fix?: {
     /** Enable automatic fixing for all supported issues */
     autoFix?: boolean;
@@ -82,6 +140,30 @@ export interface LintConfig {
     };
   };
 }
+
+/**
+ * Single formatter configuration
+ */
+export interface FormatterInstanceConfig {
+  /**
+   * Formatter runner to use
+   */
+  runner: "oxfmt" | "prettier" | "dprint";
+
+  /**
+   * Formatter runner options
+   */
+  runnerOptions?: {
+    paths?: string[];
+    check?: boolean;
+    [key: string]: any;
+  };
+}
+
+/**
+ * Formatter configuration (array of formatters)
+ */
+export type FormatConfig = FormatterInstanceConfig[];
 
 export interface GitConfig {
   hooks?: Partial<Record<ValidGitHook, string>>;

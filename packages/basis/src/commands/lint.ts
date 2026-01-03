@@ -1,111 +1,59 @@
 import { defineCommand } from "citty";
 import { consola } from "consola";
-import {
-  lintAll,
-  lintDependencies,
-  lintDocs,
-  lintProject,
-  lintStaged,
-  lintStructure,
-} from "../modules/lint";
+import { createLinterDriver } from "../linters";
+import { loadConfig } from "../utils";
 
 export const lint = defineCommand({
   meta: {
     name: "lint",
-    description: "Run comprehensive project linting and quality checks",
+    description: "Lint code with configurable linters (oxlint/eslint/tsc)",
   },
   args: {
-    staged: {
-      type: "boolean",
-      description: "Lint only staged files using configured commands",
-      default: false,
-    },
-    project: {
-      type: "boolean",
-      description: "Run project-wide lint commands",
-      default: false,
-    },
-    deps: {
-      type: "boolean",
-      description: "Check dependencies (outdated, security, blocked packages)",
-      default: false,
-    },
-    structure: {
-      type: "boolean",
-      description:
-        "Check project structure (required files/dirs, naming conventions)",
-      default: false,
-    },
-    docs: {
-      type: "boolean",
-      description: "Check documentation (README, CHANGELOG)",
-      default: false,
-    },
-    all: {
-      type: "boolean",
-      description: "Run all lint checks",
-      default: false,
-    },
     fix: {
       type: "boolean",
-      description: "Automatically fix issues where possible",
+      description: "Auto-fix linting issues",
       default: false,
     },
   },
   async run({ args }) {
-    const cwd = process.cwd();
-    let success = true;
+    try {
+      const { config } = await loadConfig();
+      const linterConfigs = config.lint || [];
 
-    // If no specific flags are provided, run staged files lint by default
-    if (
-      !args.staged &&
-      !args.project &&
-      !args.deps &&
-      !args.structure &&
-      !args.docs &&
-      !args.all
-    ) {
-      args.staged = true;
-    }
-
-    // Run all checks if --all flag is provided
-    if (args.all) {
-      success = await lintAll(cwd, args.fix);
-    } else {
-      // Run specific checks based on flags
-      const checks: Array<() => Promise<boolean>> = [];
-
-      if (args.staged) {
-        checks.push(() => lintStaged(cwd));
+      if (linterConfigs.length === 0) {
+        consola.warn("No linters configured. Add linters to your basis.config.ts");
+        return;
       }
 
-      if (args.project) {
-        checks.push(() => lintProject(cwd));
-      }
+      // Get paths from positional arguments
+      const paths = args._ && args._.length > 0 ? args._ : undefined;
 
-      if (args.deps) {
-        checks.push(() => lintDependencies(cwd, undefined, args.fix));
-      }
+      // Run each linter in order
+      for (const linterConfig of linterConfigs) {
+        const { runner, runnerOptions = {} } = linterConfig;
 
-      if (args.structure) {
-        checks.push(() => lintStructure(cwd, undefined, args.fix));
-      }
+        consola.info(`Running linter: ${runner}`);
 
-      if (args.docs) {
-        checks.push(() => lintDocs(cwd, undefined, args.fix));
-      }
+        const linter = createLinterDriver(runner);
 
-      // Run all selected checks
-      for (const check of checks) {
-        const result = await check();
-        if (!result) {
-          success = false;
+        // Merge config options with CLI options
+        const options = {
+          paths: runnerOptions.paths || paths,
+          ...runnerOptions,
+        };
+
+        if (args.fix || options.fix) {
+          consola.start(`Running ${runner} with auto-fix...`);
+          await linter.fix?.(options);
+          consola.success(`${runner} linting complete!`);
+        } else {
+          consola.start(`Running ${runner}...`);
+          await linter.lint(options);
+          consola.success(`${runner} linting complete!`);
         }
       }
-    }
-
-    if (!success) {
-      consola.error("Some lint checks failed");
+    } catch (error) {
+      consola.error("Linting failed:", error);
       process.exit(1);
     }
   },

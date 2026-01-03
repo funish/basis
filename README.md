@@ -219,10 +219,23 @@ This monorepo uses its own basis configuration:
 ```ts
 // basis.config.ts
 export default defineBasisConfig({
+  lint: [
+    { runner: "oxlint" },
+    { runner: "tsc" },
+  ],
+  fmt: [
+    { runner: "oxfmt" },
+  ],
+  check: {
+    staged: {
+      "*.{ts,js,json}": "basis lint",
+      "*.{ts,js,json,md}": "basis fmt",
+    },
+  },
   git: {
     hooks: {
-      "pre-commit": "pnpm basis lint --staged",
-      "commit-msg": "pnpm basis git lint-commit",
+      "pre-commit": "pnpm basis check --staged",
+      "commit-msg": "pnpm basis git --lint-commit",
     },
     config: {
       core: {
@@ -230,11 +243,6 @@ export default defineBasisConfig({
       },
     },
     autoInitGit: true,
-  },
-  lint: {
-    staged: {
-      "*.{ts,js,json}": "pnpm oxlint --fix --fix-suggestions",
-    },
   },
   version: {
     tagPrefix: "v",
@@ -285,4 +293,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-Built with ❤️ by [Funish](https://funish.net/) using the amazing [unjs ecosystem](https://unjs.io/)
+Built with ❤️ by [Funish](https://www.funish.net/) using the amazing [unjs ecosystem](https://unjs.io/)

@@ -89,14 +89,10 @@ export const git = defineCommand({
           args.hooks && typeof args.hooks === "string"
             ? [args.hooks]
             : Array.isArray(args.hooks)
-              ? args.hooks.filter(
-                  (hook): hook is string => typeof hook === "string",
-                )
+              ? args.hooks.filter((hook): hook is string => typeof hook === "string")
               : undefined;
         const updateConfig =
-          typeof args["update-config"] === "boolean"
-            ? args["update-config"]
-            : false;
+          typeof args["update-config"] === "boolean" ? args["update-config"] : false;
         const success = await removeGitHooks(cwd, hooksToRemove, {
           updateConfig,
         });
@@ -128,12 +124,9 @@ export const git = defineCommand({
       async run({ args }) {
         const cwd = process.cwd();
 
-        const keepUser =
-          typeof args["keep-user"] === "boolean" ? args["keep-user"] : true;
+        const keepUser = typeof args["keep-user"] === "boolean" ? args["keep-user"] : true;
         const updateConfig =
-          typeof args["update-config"] === "boolean"
-            ? args["update-config"]
-            : false;
+          typeof args["update-config"] === "boolean" ? args["update-config"] : false;
         const success = await resetGitConfig(cwd, keepUser, { updateConfig });
 
         if (!success) {

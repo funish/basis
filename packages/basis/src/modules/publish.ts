@@ -24,9 +24,7 @@ function determinePublishTag(
 
   if (semver.prerelease(version)) {
     const prerelease = semver.prerelease(version);
-    return (
-      (prerelease && (prerelease[0] as string)) || config.defaultTag || "edge"
-    );
+    return (prerelease && (prerelease[0] as string)) || config.defaultTag || "edge";
   }
 
   return config.stableTag || "latest";
@@ -48,9 +46,7 @@ async function runPrePublishChecks(
         encoding: "utf8",
       });
       if (status.trim()) {
-        throw new Error(
-          "Working directory is not clean. Commit your changes first.",
-        );
+        throw new Error("Working directory is not clean. Commit your changes first.");
       }
     } catch (error) {
       consola.warn("Could not check git status:", error);
@@ -93,10 +89,7 @@ async function runPrePublishChecks(
 /**
  * Run post-publish actions
  */
-async function runPostPublishActions(
-  cwd: string,
-  config: PublishConfig,
-): Promise<void> {
+async function runPostPublishActions(cwd: string, config: PublishConfig): Promise<void> {
   if (config.autoGitPush) {
     try {
       execSync("git push", { cwd });
@@ -156,10 +149,7 @@ export async function publishPackage(
   ];
 
   if (options.registry || publishConfig.registry) {
-    publishArgs.push(
-      "--registry",
-      options.registry || publishConfig.registry || "",
-    );
+    publishArgs.push("--registry", options.registry || publishConfig.registry || "");
   }
 
   if (options.dryRun) {

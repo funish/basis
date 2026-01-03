@@ -6,7 +6,7 @@ import micromatch from "micromatch";
 import { detectPackageManager } from "nypm";
 import { resolve } from "pathe";
 import { readPackageJSON } from "pkg-types";
-import type { LintConfig } from "../types";
+import type { CheckConfig } from "../types";
 import { fileExists, getPackageManagerCommands, loadConfig } from "../utils";
 
 /**
@@ -21,15 +21,10 @@ export function getStagedFiles(): string[] {
     const allStagedFiles = output.trim().split("\n").filter(Boolean);
 
     // Get only deleted files
-    const deletedOutput = execSync(
-      "git diff --cached --name-only --diff-filter=D",
-      {
-        encoding: "utf8",
-      },
-    );
-    const deletedFiles = new Set(
-      deletedOutput.trim().split("\n").filter(Boolean),
-    );
+    const deletedOutput = execSync("git diff --cached --name-only --diff-filter=D", {
+      encoding: "utf8",
+    });
+    const deletedFiles = new Set(deletedOutput.trim().split("\n").filter(Boolean));
 
     // Return only files that are not deleted
     return allStagedFiles.filter((file) => !deletedFiles.has(file));
@@ -65,13 +60,13 @@ export async function getProjectFiles(
  */
 export async function lintStaged(
   cwd = process.cwd(),
-  config?: LintConfig["staged"],
+  config?: CheckConfig["staged"],
 ): Promise<boolean> {
   const { config: loadedConfig } = await loadConfig({
     cwd,
-    overrides: config ? { lint: { staged: config } } : undefined,
+    overrides: config ? { check: { staged: config } } : undefined,
   });
-  const stagedConfig = loadedConfig.lint?.staged || {};
+  const stagedConfig = loadedConfig.check?.staged || {};
 
   const files = getStagedFiles();
 
@@ -81,7 +76,7 @@ export async function lintStaged(
 
   if (Object.keys(stagedConfig).length === 0) {
     consola.warn(
-      "No staged lint configuration found. Add lint.staged section to your basis.config.ts",
+      "No staged check configuration found. Add check.staged section to your basis.config.ts",
     );
     return true;
   }
@@ -92,8 +87,7 @@ export async function lintStaged(
   for (const [pattern, command] of Object.entries(stagedConfig)) {
     const matchedFiles = files.filter(
       (file) =>
-        !processedFiles.has(file) &&
-        micromatch.isMatch(file.split("/").pop() || file, pattern),
+        !processedFiles.has(file) && micromatch.isMatch(file.split("/").pop() || file, pattern),
     );
 
     if (matchedFiles.length === 0) continue;
@@ -139,17 +133,17 @@ export async function lintStaged(
  */
 export async function lintProject(
   cwd = process.cwd(),
-  config?: LintConfig["project"],
+  config?: CheckConfig["project"],
 ): Promise<boolean> {
   const { config: loadedConfig } = await loadConfig({
     cwd,
-    overrides: config ? { lint: { project: config } } : undefined,
+    overrides: config ? { check: { project: config } } : undefined,
   });
-  const projectConfig = loadedConfig.lint?.project || {};
+  const projectConfig = loadedConfig.check?.project || {};
 
   if (Object.keys(projectConfig).length === 0) {
     consola.warn(
-      "No project lint configuration found. Add lint.project section to your basis.config.ts",
+      "No project check configuration found. Add check.project section to your basis.config.ts",
     );
     return true;
   }
@@ -185,15 +179,15 @@ export async function lintProject(
  */
 export async function lintDependencies(
   cwd = process.cwd(),
-  config?: LintConfig["dependencies"],
+  config?: CheckConfig["dependencies"],
   fix = false,
 ): Promise<boolean> {
   const { config: loadedConfig } = await loadConfig({
     cwd,
-    overrides: config ? { lint: { dependencies: config } } : undefined,
+    overrides: config ? { check: { dependencies: config } } : undefined,
   });
-  const depsConfig = loadedConfig.lint?.dependencies || {};
-  const fixConfig = loadedConfig.lint?.fix?.dependencies || {};
+  const depsConfig = loadedConfig.check?.dependencies || {};
+  const fixConfig = loadedConfig.check?.fix?.dependencies || {};
 
   let hasIssues = false;
 
@@ -219,9 +213,7 @@ export async function lintDependencies(
 
       if (blockedFound.length > 0) {
         if (fix && fixConfig.removeBlocked && commands.remove) {
-          consola.start(
-            `Removing blocked packages: ${blockedFound.join(", ")}`,
-          );
+          consola.start(`Removing blocked packages: ${blockedFound.join(", ")}`);
           try {
             for (const pkg of blockedFound) {
               execSync(`${commands.remove} ${pkg}`, { cwd, stdio: "inherit" });
@@ -292,8 +284,10 @@ export async function lintDependencies(
 
     // Check allowed licenses
     if (depsConfig.allowedLicenses && depsConfig.allowedLicenses.length > 0) {
-      const { hasIssues: licenseIssues, invalidLicenses } =
-        await checkPackageLicenses(cwd, depsConfig.allowedLicenses);
+      const { hasIssues: licenseIssues, invalidLicenses } = await checkPackageLicenses(
+        cwd,
+        depsConfig.allowedLicenses,
+      );
 
       if (licenseIssues) {
         consola.error("Packages with invalid licenses found:");
@@ -331,9 +325,7 @@ async function checkRequiredFiles(
 
   if (missingFiles.length > 0) {
     if (createMissingFiles) {
-      consola.start(
-        `Creating missing files: ${missingFiles.map((m) => m.file).join(", ")}`,
-      );
+      consola.start(`Creating missing files: ${missingFiles.map((m) => m.file).join(", ")}`);
       try {
         for (const { file } of missingFiles) {
           await writeFile(resolve(cwd, file), "", "utf8");
@@ -376,9 +368,7 @@ async function checkRequiredDirectories(
 
   if (missingDirs.length > 0) {
     if (createMissingDirs) {
-      consola.start(
-        `Creating missing directories: ${missingDirs.map((m) => m.dir).join(", ")}`,
-      );
+      consola.start(`Creating missing directories: ${missingDirs.map((m) => m.dir).join(", ")}`);
       try {
         for (const { dir } of missingDirs) {
           await mkdir(resolve(cwd, dir), { recursive: true });
@@ -437,16 +427,12 @@ async function checkDirectoryNaming(
   const dirs = new Set<string>();
 
   // Get all directories that match the path pattern
-  const allDirs = await getProjectFiles(cwd, [
-    pathPattern.replace(/\/\*\*?$/, ""),
-  ]);
+  const allDirs = await getProjectFiles(cwd, [pathPattern.replace(/\/\*\*?$/, "")]);
 
   const directoryPaths = allDirs.filter(async (path) => {
     const fullPath = resolve(cwd, path);
     try {
-      const stats = await import("node:fs/promises").then((fs) =>
-        fs.stat(fullPath),
-      );
+      const stats = await import("node:fs/promises").then((fs) => fs.stat(fullPath));
       return stats.isDirectory();
     } catch {
       return false;
@@ -516,15 +502,15 @@ async function checkNamingConventions(
  */
 export async function lintStructure(
   cwd = process.cwd(),
-  config?: LintConfig["structure"],
+  config?: CheckConfig["structure"],
   fix = false,
 ): Promise<boolean> {
   const { config: loadedConfig } = await loadConfig({
     cwd,
-    overrides: config ? { lint: { structure: config } } : undefined,
+    overrides: config ? { check: { structure: config } } : undefined,
   });
-  const structureConfig = loadedConfig.lint?.structure || {};
-  const fixConfig = loadedConfig.lint?.fix?.structure || {};
+  const structureConfig = loadedConfig.check?.structure || {};
+  const fixConfig = loadedConfig.check?.fix?.structure || {};
 
   let hasIssues = false;
 
@@ -552,10 +538,7 @@ export async function lintStructure(
 
   // Check naming conventions
   if (structureConfig.naming && structureConfig.naming.length > 0) {
-    const namingCheck = await checkNamingConventions(
-      cwd,
-      structureConfig.naming,
-    );
+    const namingCheck = await checkNamingConventions(cwd, structureConfig.naming);
     if (!namingCheck) hasIssues = true;
   }
 
@@ -567,15 +550,15 @@ export async function lintStructure(
  */
 export async function lintDocs(
   cwd = process.cwd(),
-  config?: LintConfig["docs"],
+  config?: CheckConfig["docs"],
   fix = false,
 ): Promise<boolean> {
   const { config: loadedConfig } = await loadConfig({
     cwd,
-    overrides: config ? { lint: { docs: config } } : undefined,
+    overrides: config ? { check: { docs: config } } : undefined,
   });
-  const docsConfig = loadedConfig.lint?.docs || {};
-  const fixConfig = loadedConfig.lint?.fix?.docs || {};
+  const docsConfig = loadedConfig.check?.docs || {};
+  const fixConfig = loadedConfig.check?.fix?.docs || {};
 
   let hasIssues = false;
 
@@ -611,13 +594,7 @@ export async function lintDocs(
   }
 
   // Perform all file checks in parallel
-  for (const {
-    type,
-    files,
-    required,
-    fixEnabled,
-    createFile,
-  } of docFilesToCheck) {
+  for (const { type, files, required, fixEnabled, createFile } of docFilesToCheck) {
     const fileExistenceChecks = await Promise.all(
       files.map((file) => fileExists(resolve(cwd, file))),
     );
@@ -647,32 +624,27 @@ export async function lintDocs(
 /**
  * Run all lint checks
  */
-export async function lintAll(
-  cwd = process.cwd(),
-  fix = false,
-): Promise<boolean> {
+export async function lintAll(cwd = process.cwd(), fix = false): Promise<boolean> {
   const { config } = await loadConfig({ cwd });
-  const lintConfig = config.lint || {};
+  const checkConfig = config.check || {};
 
-  consola.start("Running comprehensive project lint...");
+  consola.start("Running comprehensive project checks...");
 
   const results = await Promise.allSettled([
-    lintProject(cwd, lintConfig.project),
-    lintDependencies(cwd, lintConfig.dependencies, fix),
-    lintStructure(cwd, lintConfig.structure, fix),
-    lintDocs(cwd, lintConfig.docs, fix),
+    lintProject(cwd, checkConfig.project),
+    lintDependencies(cwd, checkConfig.dependencies, fix),
+    lintStructure(cwd, checkConfig.structure, fix),
+    lintDocs(cwd, checkConfig.docs, fix),
   ]);
 
   const failures = results.filter(
-    (result) =>
-      result.status === "rejected" ||
-      (result.status === "fulfilled" && !result.value),
+    (result) => result.status === "rejected" || (result.status === "fulfilled" && !result.value),
   );
 
   if (failures.length === 0) {
     return true;
   }
-  consola.error(`${failures.length} lint check(s) failed`);
+  consola.error(`${failures.length} check(s) failed`);
   return false;
 }
 
@@ -705,9 +677,7 @@ async function checkPackageLicenses(
         checkedPackages.add(pkg.name);
 
         if (pkg.license) {
-          const license = Array.isArray(pkg.license)
-            ? pkg.license.join(", ")
-            : pkg.license;
+          const license = Array.isArray(pkg.license) ? pkg.license.join(", ") : pkg.license;
           if (!allowedLicenses.some((allowed) => license.includes(allowed))) {
             invalidLicenses.push(`${pkg.name}: ${license}`);
           }
