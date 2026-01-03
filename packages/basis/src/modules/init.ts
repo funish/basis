@@ -152,7 +152,7 @@ export async function init(cwd = process.cwd(), options: InitOptions = {}) {
   // Check if config already exists
   if (await fileExists(configPath)) {
     if (force) {
-      consola.info(`Overwriting existing ${configFileName}...`);
+      // Silent overwrite when force flag is set
     } else {
       const shouldOverwrite = await consola.prompt(`${configFileName} already exists. Overwrite?`, {
         type: "confirm",
@@ -163,8 +163,6 @@ export async function init(cwd = process.cwd(), options: InitOptions = {}) {
         consola.info(`Skipping ${configFileName} creation.`);
         return false;
       }
-
-      consola.info(`Overwriting existing ${configFileName}...`);
     }
   }
 
@@ -281,12 +279,11 @@ export async function init(cwd = process.cwd(), options: InitOptions = {}) {
         );
 
         if (shouldInstallTools) {
-          consola.start(`Installing tools: ${packageNames}`);
           try {
             await addDevDependency(missingPackages, {
               workspace: isWorkspaceRoot,
             });
-            consola.success("Tools installed successfully!");
+            // Silent success
           } catch (error) {
             consola.error("Failed to install tools:", error);
             consola.info(

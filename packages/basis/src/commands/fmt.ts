@@ -28,12 +28,9 @@ export const fmt = defineCommand({
       // Get paths from positional arguments
       const paths = args._ && args._.length > 0 ? args._ : undefined;
 
-      // Run each formatter in order
+      // Run each formatter silently
       for (const formatterConfig of formatterConfigs) {
         const { runner, runnerOptions = {} } = formatterConfig;
-
-        consola.info(`Running formatter: ${runner}`);
-
         const formatter = createFormatterDriver(runner);
 
         // Merge config options with CLI options
@@ -42,16 +39,16 @@ export const fmt = defineCommand({
           ...runnerOptions,
         };
 
+        // Execute formatter (silent)
         if (args.check || options.check) {
-          consola.start(`Checking code formatting with ${runner}...`);
           await formatter.check?.(options);
-          consola.success(`${runner} check complete!`);
         } else {
-          consola.start(`Formatting code with ${runner}...`);
           await formatter.format(options);
-          consola.success(`${runner} formatting complete!`);
         }
       }
+
+      // Single completion message
+      consola.success("Formatting complete!");
     } catch (error) {
       consola.error("Formatting failed:", error);
       process.exit(1);

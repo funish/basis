@@ -92,8 +92,6 @@ export async function lintStaged(
 
     if (matchedFiles.length === 0) continue;
 
-    consola.start(`Running staged lint for pattern: ${pattern}`);
-
     try {
       execSync(command, {
         stdio: "inherit",
@@ -148,13 +146,9 @@ export async function lintProject(
     return true;
   }
 
-  consola.start("Running project-wide linting...");
-
   let hasErrors = false;
 
   for (const [pattern, command] of Object.entries(projectConfig)) {
-    consola.start(`Running project lint: ${pattern}`);
-
     try {
       // For project-wide linting, we run the command as-is
       // The command should handle file discovery itself
@@ -203,8 +197,6 @@ export async function lintDependencies(
     const packageManager = detected?.name || "npm";
     const commands = getPackageManagerCommands(packageManager);
 
-    consola.start("Checking dependencies...");
-
     // Check for blocked packages
     if (depsConfig.blockedPackages && depsConfig.blockedPackages.length > 0) {
       const blockedFound = Object.keys(allDeps).filter((dep) =>
@@ -213,12 +205,11 @@ export async function lintDependencies(
 
       if (blockedFound.length > 0) {
         if (fix && fixConfig.removeBlocked && commands.remove) {
-          consola.start(`Removing blocked packages: ${blockedFound.join(", ")}`);
           try {
             for (const pkg of blockedFound) {
               execSync(`${commands.remove} ${pkg}`, { cwd, stdio: "inherit" });
             }
-            consola.success(`Removed ${blockedFound.length} blocked packages`);
+            // Silent success
           } catch (error) {
             consola.error("Failed to remove blocked packages:", error);
             hasIssues = true;
@@ -239,10 +230,9 @@ export async function lintDependencies(
           execSync(commands.outdated, { cwd, stdio: "pipe" });
         } catch (error) {
           if (fix && fixConfig.updateOutdated && commands.update) {
-            consola.start("Updating outdated dependencies...");
             try {
               execSync(commands.update, { cwd, stdio: "inherit" });
-              consola.success("Dependencies updated");
+              // Silent success
             } catch (updateError) {
               consola.error("Failed to update dependencies:", updateError);
               hasIssues = true;
@@ -264,10 +254,9 @@ export async function lintDependencies(
           execSync(commands.audit, { cwd, stdio: "pipe" });
         } catch (error) {
           if (fix && fixConfig.fixSecurity && commands.auditFix) {
-            consola.start("Fixing security vulnerabilities...");
             try {
               execSync(commands.auditFix, { cwd, stdio: "inherit" });
-              consola.success("Security fixes applied");
+              // Silent success
             } catch (fixError) {
               consola.error("Failed to fix security issues:", fixError);
               hasIssues = true;
@@ -325,12 +314,11 @@ async function checkRequiredFiles(
 
   if (missingFiles.length > 0) {
     if (createMissingFiles) {
-      consola.start(`Creating missing files: ${missingFiles.map((m) => m.file).join(", ")}`);
       try {
         for (const { file } of missingFiles) {
           await writeFile(resolve(cwd, file), "", "utf8");
         }
-        consola.success(`Created ${missingFiles.length} missing files`);
+        // Silent success
       } catch (error) {
         consola.error("Failed to create missing files:", error);
         return false;
@@ -368,12 +356,11 @@ async function checkRequiredDirectories(
 
   if (missingDirs.length > 0) {
     if (createMissingDirs) {
-      consola.start(`Creating missing directories: ${missingDirs.map((m) => m.dir).join(", ")}`);
       try {
         for (const { dir } of missingDirs) {
           await mkdir(resolve(cwd, dir), { recursive: true });
         }
-        consola.success(`Created ${missingDirs.length} missing directories`);
+        // Silent success
       } catch (error) {
         consola.error("Failed to create missing directories:", error);
         return false;
@@ -474,14 +461,7 @@ async function checkNamingConventions(
   let hasIssues = false;
 
   for (const namingRule of namingRules) {
-    const {
-      path: pathPattern,
-      files: filePattern,
-      directories: dirPattern,
-      description,
-    } = namingRule;
-
-    consola.start(`Checking naming rule: ${description || pathPattern}`);
+    const { path: pathPattern, files: filePattern, directories: dirPattern } = namingRule;
 
     if (filePattern) {
       const fileCheck = await checkFileNaming(cwd, pathPattern, filePattern);
@@ -513,8 +493,6 @@ export async function lintStructure(
   const fixConfig = loadedConfig.check?.fix?.structure || {};
 
   let hasIssues = false;
-
-  consola.start("Checking project structure...");
 
   // Check required files
   if (structureConfig.requiredFiles) {
@@ -562,8 +540,6 @@ export async function lintDocs(
 
   let hasIssues = false;
 
-  consola.start("Checking documentation...");
-
   // Batch check all documentation files
   const docFilesToCheck: Array<{
     type: string;
@@ -603,10 +579,9 @@ export async function lintDocs(
 
     if (required && !hasAnyFile) {
       if (fixEnabled && createFile) {
-        consola.start(`Creating ${createFile}...`);
         try {
           await writeFile(resolve(cwd, createFile), "", "utf8");
-          consola.success(`Created ${createFile}`);
+          // Silent success
         } catch (error) {
           consola.error(`Failed to create ${createFile}:`, error);
           hasIssues = true;
@@ -627,8 +602,6 @@ export async function lintDocs(
 export async function lintAll(cwd = process.cwd(), fix = false): Promise<boolean> {
   const { config } = await loadConfig({ cwd });
   const checkConfig = config.check || {};
-
-  consola.start("Running comprehensive project checks...");
 
   const results = await Promise.allSettled([
     lintProject(cwd, checkConfig.project),
