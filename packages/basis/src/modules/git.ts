@@ -328,6 +328,12 @@ export async function setupGitConfig(
   cwd = process.cwd(),
   config?: GitConfig["config"],
 ): Promise<boolean> {
+  // Check if git is available
+  if (!isGitAvailable()) {
+    consola.warn("Git command not available, skipping Git config setup");
+    return true; // Skip setup if git is not available
+  }
+
   const { config: loadedConfig } = await loadConfig({
     cwd,
     overrides: config ? { git: { config: config } } : undefined,
@@ -372,6 +378,12 @@ export async function resetGitConfig(
   keepUser = true,
   options: { updateConfig?: boolean } = {},
 ): Promise<boolean> {
+  // Check if git is available
+  if (!isGitAvailable()) {
+    consola.warn("Git command not available, skipping Git config reset");
+    return true; // Skip reset if git is not available
+  }
+
   try {
     // Create backup before resetting
     await createGitConfigBackup(cwd);
@@ -433,6 +445,12 @@ export async function setupGitHooks(
   cwd = process.cwd(),
   config?: GitConfig["hooks"],
 ): Promise<boolean> {
+  // Check if git is available
+  if (!isGitAvailable()) {
+    consola.warn("Git command not available, skipping Git hooks setup");
+    return true; // Skip setup if git is not available
+  }
+
   const { config: loadedConfig } = await loadConfig({
     cwd,
     overrides: config ? { git: { hooks: config } } : undefined,
@@ -541,6 +559,12 @@ export async function removeGitHooks(
   hooksToRemove?: string[],
   options: { updateConfig?: boolean } = {},
 ): Promise<boolean> {
+  // Check if git is available
+  if (!isGitAvailable()) {
+    consola.warn("Git command not available, skipping Git hooks removal");
+    return true; // Skip removal if git is not available
+  }
+
   const hooksDir = resolve(cwd, ".git/hooks");
 
   if (!(await fileExists(hooksDir))) {
