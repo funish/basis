@@ -1,160 +1,22 @@
-import { defineCommand } from "citty";
+import { defineCommand, type CommandDef, type ArgsDef } from "citty";
 import { consola } from "consola";
-import {
-  initGitRepo,
-  lintCommitMessage,
-  removeGitHooks,
-  resetGitConfig,
-  setupGit,
-  setupGitConfig,
-  setupGitHooks,
-} from "../modules/git";
+import { exec } from "dugite";
+import { lintStagedFiles, lintCommitMessage, setupGit } from "../modules/git";
 
-export const git = defineCommand({
+export const gitCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
   meta: {
     name: "git",
-    description: "Git configuration and hooks management",
+    description: "Git operations",
   },
   subCommands: {
-    setup: defineCommand({
+    staged: defineCommand({
       meta: {
-        name: "setup",
-        description: "Setup Git configuration and hooks",
+        name: "staged",
+        description: "Check staged files",
       },
       async run() {
-        const cwd = process.cwd();
-
-        const success = await setupGit(cwd);
-
+        const success = await lintStagedFiles();
         if (!success) {
-          process.exit(1);
-        }
-      },
-    }),
-
-    config: defineCommand({
-      meta: {
-        name: "config",
-        description: "Setup Git configuration only",
-      },
-      async run() {
-        const cwd = process.cwd();
-
-        const success = await setupGitConfig(cwd);
-
-        if (!success) {
-          consola.error("Git configuration failed");
-          process.exit(1);
-        }
-      },
-    }),
-
-    hooks: defineCommand({
-      meta: {
-        name: "hooks",
-        description: "Setup Git hooks only",
-      },
-      async run() {
-        const cwd = process.cwd();
-
-        const success = await setupGitHooks(cwd);
-
-        if (!success) {
-          consola.error("Git hooks setup failed");
-          process.exit(1);
-        }
-      },
-    }),
-
-    remove: defineCommand({
-      meta: {
-        name: "remove",
-        description: "Remove Git hooks",
-      },
-      args: {
-        hooks: {
-          type: "positional",
-          description: "Specific hook names to remove (optional)",
-          required: false,
-        },
-        "update-config": {
-          type: "boolean",
-          description: "Also remove hooks configuration from basis.config.ts",
-          default: false,
-        },
-      },
-      async run({ args }) {
-        const cwd = process.cwd();
-        const hooksToRemove =
-          args.hooks && typeof args.hooks === "string"
-            ? [args.hooks]
-            : Array.isArray(args.hooks)
-              ? args.hooks.filter(
-                  (hook): hook is string => typeof hook === "string",
-                )
-              : undefined;
-        const updateConfig =
-          typeof args["update-config"] === "boolean"
-            ? args["update-config"]
-            : false;
-        const success = await removeGitHooks(cwd, hooksToRemove, {
-          updateConfig,
-        });
-
-        if (!success) {
-          consola.error("Git hooks removal failed");
-          process.exit(1);
-        }
-      },
-    }),
-
-    reset: defineCommand({
-      meta: {
-        name: "reset",
-        description: "Reset Git configuration (keeps user info by default)",
-      },
-      args: {
-        "keep-user": {
-          type: "boolean",
-          description: "Keep user information (name, email)",
-          default: true,
-        },
-        "update-config": {
-          type: "boolean",
-          description: "Also remove git config from basis.config.ts",
-          default: false,
-        },
-      },
-      async run({ args }) {
-        const cwd = process.cwd();
-
-        const keepUser =
-          typeof args["keep-user"] === "boolean" ? args["keep-user"] : true;
-        const updateConfig =
-          typeof args["update-config"] === "boolean"
-            ? args["update-config"]
-            : false;
-        const success = await resetGitConfig(cwd, keepUser, { updateConfig });
-
-        if (!success) {
-          consola.error("Git configuration reset failed");
-          process.exit(1);
-        }
-      },
-    }),
-
-    init: defineCommand({
-      meta: {
-        name: "init",
-        description: "Initialize Git repository with basis configuration",
-      },
-      async run() {
-        const cwd = process.cwd();
-
-        const success = await initGitRepo(cwd);
-
-        if (!success) {
-          consola.error("Git initialization failed");
           process.exit(1);
         }
       },
@@ -166,18 +28,60 @@ export const git = defineCommand({
         description: "Validate commit message",
       },
       async run() {
-        const cwd = process.cwd();
-
-        const success = await lintCommitMessage(cwd);
-
+        const success = await lintCommitMessage();
         if (!success) {
-          consola.error("Commit message validation failed");
+          process.exit(1);
+        }
+      },
+    }),
+
+    setup: defineCommand({
+      meta: {
+        name: "setup",
+        description: "Setup Git hooks and configuration",
+      },
+      async run() {
+        const success = await setupGit();
+        if (!success) {
           process.exit(1);
         }
       },
     }),
   },
+  async run({ rawArgs }) {
+    // If no args, show help
+    if (rawArgs.length === 0) {
+      consola.info("Available subcommands: staged, lint-commit, setup");
+      consola.info("Git passthrough mode: basis git <git-command>");
+      return;
+    }
 
-  // Default action when no subcommand is provided
-  async run() {},
+    // If first arg is a subcommand, don't passthrough (defensive check)
+    const subCommandNames = ["staged", "lint-commit", "setup"];
+    const firstArg = rawArgs[0];
+    if (subCommandNames.includes(firstArg)) {
+      return;
+    }
+
+    // Passthrough to git
+    try {
+      const result = await exec(rawArgs, process.cwd(), {
+        processCallback: (childProcess) => {
+          childProcess.stdout?.on("data", (data) => {
+            process.stdout.write(data);
+          });
+          childProcess.stderr?.on("data", (data) => {
+            process.stderr.write(data);
+          });
+        },
+      });
+
+      if (result.exitCode !== 0) {
+        throw new Error(`git exited with code ${result.exitCode}`);
+      }
+    } catch (error) {
+      consola.error("Git operation failed:", error);
+      process.exit(1);
+    }
+  },
 });

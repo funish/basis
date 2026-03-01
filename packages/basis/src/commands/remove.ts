@@ -1,72 +1,35 @@
-import { defineCommand } from "citty";
+import { defineCommand, type CommandDef, type ArgsDef } from "citty";
 import { consola } from "consola";
-import { type PackageManagerName, removeDependency } from "nypm";
+import { removeDependency } from "nypm";
 
-export default defineCommand({
+export const removeCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
   meta: {
     name: "remove",
-    description: "Remove dependencies from the project",
+    description: "Remove dependencies",
   },
-  args: {
-    packages: {
-      type: "positional",
-      description: "Packages to remove",
-      required: true,
-    },
-    cwd: {
-      type: "string",
-      description: "Working directory",
-      default: process.cwd(),
-    },
-    silent: {
-      type: "boolean",
-      description: "Silent mode",
-      alias: "s",
-    },
-    "package-manager": {
-      type: "string",
-      description: "Package manager to use (npm, yarn, pnpm, bun, deno)",
-      alias: "pm",
-    },
-    dev: {
-      type: "boolean",
-      description: "Remove from dev dependencies",
-      alias: "D",
-    },
-    workspace: {
-      type: "string",
-      description: "Workspace name",
-      alias: "w",
-    },
-    global: {
-      type: "boolean",
-      description: "Remove globally",
-      alias: "g",
-    },
-  },
-  async run({ args }) {
+  async run({ rawArgs }) {
+    if (rawArgs.length === 0) {
+      consola.error("Please specify at least one package name");
+      consola.info("Example: basis remove lodash");
+      process.exit(1);
+    }
+
+    // Filter out flags from rawArgs to get package names
+    const packages = rawArgs.filter((arg) => !arg.startsWith("-"));
+
+    if (packages.length === 0) {
+      consola.error("Please specify at least one package name");
+      process.exit(1);
+    }
+
     try {
-      const packages = Array.isArray(args.packages)
-        ? args.packages
-        : [args.packages];
+      await removeDependency(packages, {
+        cwd: process.cwd(),
+      });
 
-      const options = {
-        cwd: args.cwd,
-        silent: args.silent,
-        packageManager: args["package-manager"] as PackageManagerName,
-        dev: args.dev,
-        workspace: args.workspace,
-        global: args.global,
-      };
-
-      for (const packageName of packages) {
-        await removeDependency(packageName, options);
-        if (!args.silent) {
-          consola.success(`Removed ${packageName}`);
-        }
-      }
+      consola.success(`Removed ${packages.join(", ")}`);
     } catch (error) {
-      consola.error("Failed to remove dependencies:", error);
+      consola.error("Remove packages failed:", error);
       process.exit(1);
     }
   },

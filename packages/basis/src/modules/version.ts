@@ -1,27 +1,14 @@
-import { execSync } from "node:child_process";
-import { consola } from "consola";
-import {
-  readPackageJSON,
-  resolvePackageJSON,
-  writePackageJSON,
-} from "pkg-types";
 import semver from "semver";
-import type {
-  VersionConfig,
-  VersionOptions,
-  VersionUpdateResult,
-} from "../types";
-import { loadConfig } from "../utils";
+import type { VersionConfig, VersionOptions } from "../types";
 
 /**
- * Calculate new version based on options and config
+ * Calculate new version based on options
  */
-function calculateNewVersion(
+export function calculateNewVersion(
   oldVersion: string,
   options: VersionOptions,
-  versionConfig: VersionConfig,
+  config: VersionConfig,
 ): string {
-  // Use provided version if valid
   if (options.version) {
     if (semver.valid(options.version)) {
       return options.version;
@@ -37,28 +24,28 @@ function calculateNewVersion(
     );
   }
 
-  // Get current prerelease info
   const currentPrerelease = semver.prerelease(oldVersion);
-
-  // Determine preid: use provided preid, or current prerelease tag, or default from config
   const preid =
     options.preid ||
-    (currentPrerelease && typeof currentPrerelease[0] === "string"
-      ? currentPrerelease[0]
-      : null) ||
-    versionConfig.prereleaseId ||
+    (currentPrerelease && typeof currentPrerelease[0] === "string" ? currentPrerelease[0] : null) ||
+    config.preid ||
     "edge";
 
-  // Determine release type
-  let releaseType: semver.ReleaseType;
+  let releaseType: semver.ReleaseType = "patch";
   if (options.major) {
     releaseType = "major";
   } else if (options.minor) {
     releaseType = "minor";
+  } else if (options.premajor) {
+    releaseType = "premajor";
+  } else if (options.preminor) {
+    releaseType = "preminor";
+  } else if (options.prepatch) {
+    releaseType = "prepatch";
   } else if (options.prerelease) {
     releaseType = currentPrerelease ? "prerelease" : "prepatch";
-  } else {
-    releaseType = currentPrerelease ? "prerelease" : "patch";
+  } else if (options.fromGit) {
+    releaseType = "patch";
   }
 
   const result =
@@ -71,75 +58,5 @@ function calculateNewVersion(
       `Failed to calculate new version from ${oldVersion}. Please check your version increment options.`,
     );
   }
-  return result;
-}
-
-/**
- * Update package.json version
- */
-export async function updatePackageVersion(
-  cwd: string,
-  options: VersionOptions = {},
-): Promise<VersionUpdateResult> {
-  const { config } = await loadConfig({ cwd });
-  const versionConfig = config.version || {};
-
-  // Read package.json using pkg-types
-  const packageJson = await readPackageJSON(cwd);
-  const oldVersion = packageJson.version;
-
-  if (!oldVersion) {
-    throw new Error("No version found in package.json");
-  }
-
-  // Calculate new version
-  const newVersion = calculateNewVersion(oldVersion, options, versionConfig);
-
-  // Update and write package.json using pkg-types
-  const packageJsonPath = await resolvePackageJSON(cwd);
-  await writePackageJSON(packageJsonPath, {
-    ...packageJson,
-    version: newVersion,
-  });
-
-  const result: VersionUpdateResult = { oldVersion, newVersion };
-
-  // Git operations
-  if (versionConfig.autoCommit) {
-    const commitMessage =
-      options.message ||
-      versionConfig.commitMessage?.replace("{version}", newVersion) ||
-      `chore: release v${newVersion}`;
-
-    try {
-      execSync("git add package.json", { cwd });
-      execSync(`git commit -m "${commitMessage}"`, { cwd });
-    } catch (error) {
-      consola.warn("Failed to commit changes:", error);
-    }
-  }
-
-  if (versionConfig.autoTag) {
-    const tagName = `${versionConfig.tagPrefix || "v"}${newVersion}`;
-    try {
-      execSync(`git tag ${tagName}`, { cwd });
-
-      result.tagName = tagName;
-    } catch (error) {
-      consola.warn("Failed to create git tag:", error);
-    }
-  }
-
-  if (versionConfig.autoPush) {
-    try {
-      execSync("git push", { cwd });
-      if (versionConfig.autoTag) {
-        execSync("git push --tags", { cwd });
-      }
-    } catch (error) {
-      consola.warn("Failed to push changes:", error);
-    }
-  }
-
   return result;
 }

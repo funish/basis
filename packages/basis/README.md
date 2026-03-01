@@ -4,97 +4,97 @@
 [![npm version](https://img.shields.io/npm/v/@funish/basis.svg)](https://www.npmjs.com/package/@funish/basis)
 [![npm downloads](https://img.shields.io/npm/dm/@funish/basis.svg)](https://www.npmjs.com/package/@funish/basis)
 
-> A unified development toolkit with CLI for package management, versioning, publishing, linting, and git hooks management for JavaScript/TypeScript projects.
+> A modern development toolkit with unified CLI for package management, versioning, publishing, code quality, and Git workflow automation.
 
 **🧑‍💻 Contributing?** See the [monorepo documentation](https://github.com/funish/basis) for development setup and contribution guidelines.
 
 ## What is Basis?
 
-Basis is your **unified development toolkit** for modern JavaScript/TypeScript projects. Instead of juggling multiple CLI tools, Basis provides a single interface for all your development workflow needs.
+Basis is your **unified development toolkit** for modern projects. Instead of juggling multiple CLI tools, Basis provides a single interface for all your development workflow needs.
 
 ## Features
 
 - 🎯 **Unified CLI**: One command interface for all development tasks
-- 📦 **Package Management**: Install, add, remove dependencies with auto-detected package manager (npm, yarn, pnpm, bun, deno)
-- 🏷️ **Version Management**: Semantic versioning with automated git tagging and releases
-- 🚀 **Publishing**: Multi-tag publishing strategy with edge version tracking
-- 🔧 **Tool Agnostic Linting**: Not tied to specific linters - use ESLint, Oxlint, Biome, or any tool you prefer
-- 🛠️ **Auto-fix Issues**: Automatically fix dependencies, structure, and documentation issues
-- 🪝 **Smart Git Hooks**: Automatic git repository initialization and hook management
-- 💻 **Modern Stack**: Built on the unjs ecosystem (citty, consola, c12, nypm, semver)
-- 💪 **TypeScript First**: Full TypeScript support with excellent DX
-- 📚 **Smart Defaults**: Best practices built-in, fully customizable
+- 📦 **Package Management**: Add, remove dependencies with auto-detected package manager (npm, yarn, pnpm, bun, deno)
+- 🏷️ **Version Management**: Semantic versioning with automated git tagging
+- 🚀 **Publishing**: Flexible publishing with tag strategy
+- 🔍 **Code Quality**: Linting, formatting, and type checking
+- 🛠️ **Project Audit**: Dependency and structure validation
+- 🪪 **Smart Git Hooks**: Automatic git hook management and commit message validation
+- 💻 **Direct TS Execution**: Run TypeScript files directly without compilation
 - 🔧 **Single Configuration**: One config file for all functionality
 
 ## Quick Start
 
-### Recommended Installation (Global with pnpm)
+### Installation
 
 ```bash
-# Install globally with pnpm (recommended)
+# Install globally (recommended)
 pnpm add -g @funish/basis
-
-# Or install globally with npm
 npm install -g @funish/basis
-
-# Verify installation
-basis --version
-```
-
-### Alternative Installation Methods
-
-```bash
-# Install in your project with pnpm
-pnpm add -D @funish/basis
-
-# Or with npm
-npm install -D @funish/basis
 
 # Or use directly without installation
 npx @funish/basis init
 ```
 
-### Initialize in Existing Project
+### Initialize
 
 ```bash
-cd your-existing-project
+cd your-project
 basis init
 
-# Interactive setup will ask you to:
-# 📁 Choose config format (.ts/.mjs/.cjs) - auto-detected based on your project
-# 🔧 Optionally setup Git hooks and configuration
-
-# Your project now has:
-# ✅ Configuration file with Git hooks that adapt to your package manager
-# ✅ Git hooks setup (if selected during init)
-# ✅ Tool-agnostic linting workflow
-# ✅ Package management through unified CLI
-# ✅ Version management with semantic versioning
-# ✅ Publishing workflow with multi-tag strategy
+# This creates:
+# ✅ basis.config.ts with Git hooks
+# ✅ Git hooks setup (run 'basis git setup' to activate)
 ```
 
 ## CLI Commands
 
+### Code Quality
+
+```bash
+# Lint code
+basis lint
+
+# Format code
+basis fmt
+
+# Type check
+basis check
+
+# Build project
+basis build
+
+# Audit code quality
+basis audit                    # Run all audits
+basis audit --dependencies     # Audit dependencies only
+basis audit --structure        # Audit structure only
+```
+
 ### Package Management
 
 ```bash
-# Install dependencies (auto-detects package manager)
-basis install              # or basis i
-basis install --frozen-lockfile
-
 # Add dependencies
-basis add lodash           # Add to dependencies
-basis add -D typescript    # Add to devDependencies
-basis add --workspace app react  # Add to specific workspace
-basis add -g @funish/basis # Install globally
+basis add lodash
+basis add -D typescript
 
 # Remove dependencies
-basis remove lodash        # or basis rm / basis uninstall
-basis remove -D typescript
+basis remove lodash
 
-# Run scripts
-basis run build            # Run package.json scripts
-basis run test --silent
+# Execute package without installation
+basis dlx prettier --write .
+```
+
+### Run Scripts or Files
+
+```bash
+# Run package.json scripts
+basis run dev
+basis run build
+
+# Run TypeScript/JavaScript files directly
+basis run src/index.ts
+basis run scripts/setup.js
 ```
 
 ### Version Management
@@ -106,434 +106,138 @@ basis version minor        # 1.0.0 → 1.1.0
 basis version major        # 1.0.0 → 2.0.0
 
 # Prerelease versions
-basis version --prerelease        # 1.0.0 → 1.0.1-edge.0
-basis version --prerelease --preid beta  # 1.0.0 → 1.0.1-beta.0
+basis version prerelease        # 1.0.0 → 1.0.1-edge.0
+basis version prerelease --preid beta  # 1.0.0 → 1.0.1-beta.0
 
 # Specific version
 basis version 2.0.0
-
-# Custom commit message
-basis version patch --message "fix: critical bug"
 ```
 
 ### Publishing
 
 ```bash
-# Standard publishing (to edge tag)
-basis publish
+# Publish with tag detection
+basis publish              # Auto-detect tag based on version
+basis publish --tag beta   # Custom tag
 
-# Stable release (to latest + edge tags)
-basis publish --stable
-
-# Custom tag publishing (to custom + edge tags)
-basis publish --tag beta
-basis publish --tag alpha
-
-# Dry run
-basis publish --dry-run
-
-# Skip build/tests
-basis publish --skip-build --skip-tests
+# With git operations
+basis publish --git        # Also create git tag and commit
 ```
 
-### Linting
+### Git Operations
 
 ```bash
-# Lint staged files
-basis lint --staged
+# Setup Git hooks
+basis git setup            # Install hooks from config
 
-# Run project-wide linting
-basis lint --project
-
-# Check dependencies
-basis lint --deps
-
-# Check project structure
-basis lint --structure
-
-# Check documentation
-basis lint --docs
-
-# Run all lint checks
-basis lint --all
-
-# Auto-fix issues (can be combined with any check)
-basis lint --deps --fix              # Check and fix dependency issues
-basis lint --structure --fix         # Check and fix structure issues
-basis lint --docs --fix             # Check and fix documentation issues
-basis lint --all --fix              # Check and fix all issues
-basis lint --staged --fix           # Note: --fix only works with --deps, --structure, --docs, --all
-```
-
-#### Auto-fix Features
-
-The `--fix` flag enables automatic fixing of common issues:
-
-**🔧 Dependency Fixes**:
-
-- **Remove blocked packages**: Automatically uninstall packages listed in `blockedPackages`
-- **Update outdated dependencies**: Use package manager's update command to fix outdated packages
-- **Fix security vulnerabilities**: Attempt to fix security issues using `npm audit fix` or equivalent
-
-**📁 Structure Fixes**:
-
-- **Create missing files**: Generate empty files for items in `requiredFiles`
-- **Create missing directories**: Generate directories for items in `requiredDirs`
-
-**📝 Documentation Fixes**:
-
-- **Generate README.md**: Create an empty README.md if missing
-- **Generate CHANGELOG.md**: Create an empty CHANGELOG.md if missing
-
-**Configuration**: All fix behaviors are controlled by the `lint.fix` configuration in your `basis.config.ts`:
-
-```ts
-export default defineBasisConfig({
-  lint: {
-    fix: {
-      dependencies: {
-        removeBlocked: true, // Enable automatic removal of blocked packages
-        updateOutdated: false, // Disable automatic updates (manual control)
-        fixSecurity: true, // Enable security fix attempts
-      },
-      structure: {
-        createMissingFiles: true, // Enable file creation
-        createMissingDirs: true, // Enable directory creation
-      },
-      docs: {
-        generateReadme: true, // Enable README generation
-        generateChangelog: false, // Disable CHANGELOG generation
-      },
-    },
-  },
-});
-```
-
-### Git Hooks Management
-
-```bash
-# Setup git configuration and hooks
-basis git setup
-
-# Setup git configuration only
-basis git config
-
-# Setup git hooks only
-basis git hooks
-
-# Remove git hooks
-basis git remove                         # Remove all basis-managed hooks
-basis git remove pre-commit             # Remove specific hook
-basis git remove --update-config        # Remove hooks AND config from basis.config.ts
-
-# Reset git configuration
-basis git reset                          # Reset config (keep user info)
-basis git reset --no-keep-user          # Reset config (remove user info)
-basis git reset --update-config         # Reset config AND remove from basis.config.ts
-
-# Initialize git repository with basis configuration
-basis git init
+# Check staged files
+basis git staged
 
 # Validate commit message
-basis git --lint-commit
-```
+basis git lint-commit
 
-### Project Management
-
-```bash
-# Initialize configuration
-basis init                     # Initialize basis configuration (interactive)
-basis init --force            # Overwrite existing configuration
-basis init --skip-git-check   # Skip git directory check
-basis init --skip-install     # Skip dependency installation
-
-# Interactive setup will:
-# 1. Auto-detect recommended config format (.ts/.mjs/.cjs)
-# 2. Ask you to choose your preferred format
-# 3. Offer to setup Git hooks and configuration
-
-# Configuration
-basis config                   # Show current configuration
-basis config --json           # Output configuration as JSON
-basis config --path           # Show configuration file path
-
-# Help
-basis --help                   # Show help
-basis <command> --help         # Show command-specific help
+# Git passthrough
+basis git status
+basis git log --oneline
 ```
 
 ## Configuration
 
-Basis uses a single configuration file for all its features. The `basis init` command creates a configuration file with customized Git hooks in your preferred format:
-
-```ts
-// basis.config.ts (TypeScript) or basis.config.mjs (ES Module)
-import { defineBasisConfig } from "@funish/basis";
-
-export default defineBasisConfig({
-  // Configure your project here
-  // See: https://github.com/funish/basis/tree/main/packages/basis#configuration
-  git: {
-    hooks: {
-      "pre-commit": "pnpmbasis lint --staged", // Auto-adapts to your package manager
-      "commit-msg": "pnpmbasis git --lint-commit",
-    },
-  },
-});
-```
-
-```cjs
-// basis.config.cjs (CommonJS)
-const { defineBasisConfig } = require("@funish/basis");
-
-module.exports = defineBasisConfig({
-  // Configure your project here
-  // See: https://github.com/funish/basis/tree/main/packages/basis#configuration
-  git: {
-    hooks: {
-      "pre-commit": "npx basis lint --staged", // Auto-adapts to your package manager
-      "commit-msg": "npx basis git --lint-commit",
-    },
-  },
-});
-```
-
-> **💡 Configuration**: The generated config file only shows the Git hooks that are customized for your package manager. All other configuration options use smart defaults and can be added as needed.
-
-### Full Configuration Example
-
-Here's a complete configuration with all available options:
+Basis uses a single configuration file for all features:
 
 ```ts
 // basis.config.ts
-import { defineBasisConfig } from "@funish/basis";
+import { defineBasisConfig } from "@funish/basis/config";
 
 export default defineBasisConfig({
-  // Linting configuration
-  lint: {
-    // Staged files linting patterns
-    staged: {
-      "*.{ts,tsx,js,jsx}": "pnpm eslint --fix",
-      "*.{json,md,yml,yaml}": "pnpm prettier --write",
-      "*.vue": "pnpm vue-tsc --noEmit && pnpm eslint --fix",
-    },
-    // Project-wide linting commands
-    project: {
-      typecheck: "pnpm tsc --noEmit",
-      "format-check": "pnpm prettier --check .",
-    },
-    // Auto-fix configuration
-    fix: {
-      // Dependency fix options
-      dependencies: {
-        removeBlocked: true, // Auto-remove blocked packages
-        updateOutdated: true, // Auto-update outdated dependencies
-        fixSecurity: true, // Auto-fix security vulnerabilities
-      },
-      // Structure fix options
-      structure: {
-        createMissingFiles: true, // Auto-create missing required files
-        createMissingDirs: true, // Auto-create missing required directories
-      },
-      // Documentation fix options
-      docs: {
-        generateReadme: true, // Auto-create README.md if missing
-        generateChangelog: true, // Auto-create CHANGELOG.md if missing
-      },
-    },
-  },
+  // Linting configuration (oxlint)
+  lint: {},
+
+  // Formatting configuration (oxfmt)
+  fmt: {},
 
   // Git configuration
   git: {
-    // Hook commands
+    // Git hooks
     hooks: {
-      "pre-commit": "pnpmbasis lint --staged",
-      "commit-msg": "pnpmbasis git --lint-commit",
+      "pre-commit": "basis git staged",
+      "commit-msg": "basis git lint-commit",
+    },
+
+    // Staged files check (lint-staged style)
+    staged: {
+      rules: {
+        "*.{ts,tsx,js,jsx}": "basis lint --fix",
+        "*.{json,md,yml,yaml}": "basis fmt --write",
+      },
     },
 
     // Commit message validation
     commitMsg: {
-      types: [
-        "feat",
-        "fix",
-        "docs",
-        "style",
-        "refactor",
-        "perf",
-        "test",
-        "build",
-        "ci",
-        "chore",
-      ],
+      types: ["feat", "fix", "docs", "style", "refactor", "perf", "test", "build", "ci", "chore"],
       maxLength: 72,
       minLength: 10,
-      scopeRequired: false,
-      allowedScopes: ["api", "ui", "core"],
     },
-
-    // Options
-    autoInitGit: true, // Auto-initialize git repo if not found
-    skipGitCheck: false, // Skip git command availability check
-    force: false, // Force operation even if git unavailable
   },
 
-  // Version management configuration
+  // Run configuration (jiti)
+  run: {},
+
+  // Audit configuration
+  audit: {
+    dependencies: {
+      outdated: true,
+      security: true,
+      licenses: {
+        allowed: ["MIT", "Apache-2.0", "BSD-3-Clause"],
+        blocked: ["GPL"],
+      },
+      blocked: ["bad-package"],
+    },
+    structure: {
+      required: ["README.md", "LICENSE"],
+      files: [
+        {
+          pattern: "src/**/*.ts",
+          rule: "^[a-z][a-z0-9-]*\\.ts$",
+          message: "Files should use kebab-case",
+        },
+      ],
+      dirs: [
+        {
+          pattern: "src/*/",
+          rule: "^[a-z][a-z0-9-]*$",
+          message: "Directories should use kebab-case",
+        },
+      ],
+    },
+  },
+
+  // Version configuration
   version: {
-    tagPrefix: "v", // Git tag prefix
-    autoCommit: true, // Auto commit version changes
-    autoTag: true, // Auto create git tag
-    autoPush: false, // Manual push control
-    prereleaseId: "edge", // Default prerelease identifier
-    commitMessage: "chore: release v{version}",
+    preid: "edge",
   },
 
   // Publishing configuration
   publish: {
-    defaultTag: "edge", // Always published tag
-    stableTag: "latest", // Stable release tag
-    access: "public", // Package access level
-    registry: "https://registry.npmjs.org/",
-    buildCommand: "pnpm build", // Build before publish
-    testCommand: "pnpm test", // Test before publish
-    checkGitClean: true, // Check git status before publish
-    checkTests: true, // Run tests before publish
-    autoGitPush: true, // Push after publish
-    createGitTag: true, // Create git tag after publish
+    tag: "latest",
+    git: {
+      tagPrefix: "v",
+      message: (version) => `chore: release v${version}`,
+      push: true,
+      signTag: false,
+    },
   },
 });
 ```
 
 ## Publishing Strategy
 
-Basis implements an intelligent multi-tag publishing strategy:
+Basis uses intelligent tag detection based on version:
 
-### Tag Types
-
-- **`edge`**: Always points to the latest published version (any type)
-- **`latest`**: Points to stable releases
-- **Prerelease Tags**: `alpha`, `beta`, `rc` versions get their own tags
-- **Custom Tags**: Flexible tagging for different release channels
-
-### Examples
-
-```bash
-# Version 1.0.0 (stable)
-basis publish --stable
-# → Published to: latest + edge
-
-# Version 1.1.0-beta.1 (prerelease)
-basis publish
-# → Published to: beta + edge
-
-# Version 1.2.0 (custom workflow)
-basis publish --tag canary
-# → Published to: canary + edge
-```
-
-### Installation Examples
-
-```bash
-# Install stable version
-pnpm add @funish/basis        # Gets latest tag
-
-# Install edge version (latest published)
-pnpm add @funish/basis@edge
-
-# Install prerelease
-pnpm add @funish/basis@beta
-
-# Install specific version
-pnpm add @funish/basis@1.0.0
-```
-
-## Core Concepts
-
-### 🎯 **Unified CLI**
-
-Single command interface for package management, versioning, publishing, linting, and git hooks. No more switching between different tools.
-
-### 📦 **Auto-Detected Package Manager**
-
-Basis automatically detects your preferred package manager (npm, yarn, pnpm, bun, deno) and uses the appropriate commands, powered by [nypm](https://github.com/unjs/nypm).
-
-### 🏷️ **Semantic Versioning**
-
-Built-in semantic versioning support using the standard [semver](https://www.npmjs.com/package/semver) package, with automated git tagging and commit generation.
-
-### 🔧 **Tool Agnostic**
-
-Basis doesn't force specific tools. Use ESLint, Oxlint, Biome, or any other linter. Basis orchestrates your existing tools, doesn't replace them.
-
-### 📦 **Modern Foundations**
-
-Built on the [unjs ecosystem](https://unjs.io/), leveraging proven tools like `citty`, `consola`, `c12`, `nypm`, and `semver` for maximum reliability and performance.
-
-## Integration
-
-Basis integrates seamlessly with:
-
-- **Package Managers**: npm, yarn, pnpm, bun, deno (auto-detected)
-- **Linters**: ESLint, Oxlint, Biome, Prettier, StyleLint
-- **Git**: Works with any git workflow and hosting provider
-- **CI/CD**: GitHub Actions, GitLab CI, Jenkins
-- **Frameworks**: React, Vue, Angular, Next.js, Nuxt, SvelteKit
-
-## Why Choose Basis?
-
-### Instead of juggling multiple tools:
-
-```bash
-npm install package          # Package management
-yarn version patch           # Version management
-npm publish --tag beta       # Publishing
-npx lint-staged             # Linting
-git config --global ...     # Git configuration
-```
-
-### Use one unified command:
-
-```bash
-basis add package           # Unified package management
-basis version patch         # Unified version management
-basis publish --tag beta   # Unified publishing
-basis lint --staged        # Unified linting
-basis git setup            # Unified git setup
-```
-
-## API
-
-```ts
-import {
-  createBasis,
-  defineBasisConfig,
-  // Import module functions directly for maximum flexibility
-  init,
-  setupGit,
-  lintAll,
-  updatePackageVersion,
-  publishPackage,
-} from "@funish/basis";
-
-// Programmatic usage with Basis class (for config caching and workflows)
-const basis = createBasis(process.cwd());
-
-// High-level workflows
-await basis.setup({ force: false, skipGitCheck: false, skipInstall: false }); // init + git setup
-await basis.release({ patch: true }, { stable: true }); // lint + version + publish
-
-// Configuration management
-const config = await basis.getConfig(); // Cached config loading
-await basis.reloadConfig(); // Force reload
-basis.setCwd("/different/path"); // Change working directory
-
-// Or use module functions directly for more control
-const cwd = process.cwd();
-await init(cwd, { force: true });
-await setupGit(cwd);
-await lintAll(cwd);
-await updatePackageVersion(cwd, { patch: true });
-await publishPackage(cwd, { stable: true });
-```
+- **Stable** (1.0.0): Published to `latest` + `edge`
+- **Prerelease** (1.0.0-beta.1): Published to `beta` + `edge`
+- **Custom tag**: Use `--tag` to override
 
 ## License
 

@@ -1,16 +1,15 @@
-import { defineCommand } from "citty";
+import { defineCommand, type CommandDef, type ArgsDef } from "citty";
 import { consola } from "consola";
-import { init } from "../modules/init";
+import { initProject } from "../modules/init";
 
-export default defineCommand({
+export const initCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
   meta: {
     name: "init",
-    description: "Initialize basis configuration",
+    description: "Initialize configuration",
   },
   args: {
     force: {
       type: "boolean",
-      alias: "f",
       description: "Overwrite existing configuration",
     },
     "skip-git-check": {
@@ -24,7 +23,7 @@ export default defineCommand({
   },
   async run({ args }) {
     try {
-      await init(process.cwd(), {
+      await initProject(process.cwd(), {
         force: args.force,
         skipGitCheck: args["skip-git-check"],
         skipInstall: args["skip-install"],

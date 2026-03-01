@@ -1,79 +1,67 @@
-import { defineCommand } from "citty";
+import { defineCommand, type CommandDef, type ArgsDef } from "citty";
 import { consola } from "consola";
-import { publishPackage } from "../modules/publish";
+import { readPackageJSON } from "pkg-types";
+import { loadConfig } from "../config";
+import { publishToNpm, publishGitOperations } from "../modules/publish";
 import type { PublishOptions } from "../types";
 
-export default defineCommand({
+export const publishCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
   meta: {
     name: "publish",
-    description: "Publish package to npm registry",
+    description: "Publish to registry",
   },
   args: {
     tag: {
       type: "string",
-      description: "Specific npm tag to publish to",
-      alias: "t",
+      description: "Publish tag",
     },
-    stable: {
+    git: {
       type: "boolean",
-      description: "Publish as stable release (latest tag)",
-      alias: "s",
-    },
-    latest: {
-      type: "boolean",
-      description: "Publish to latest tag",
-      alias: "l",
-    },
-    dryRun: {
-      type: "boolean",
-      description: "Perform a dry run without actually publishing",
-      alias: "d",
+      description: "Also create git tag and commit",
     },
     access: {
       type: "string",
-      description: "Package access level (public/private)",
-      alias: "a",
+      description: "Package access level (public, restricted)",
     },
-    registry: {
+    "dry-run": {
+      type: "boolean",
+      description: "Dry run mode",
+    },
+    otp: {
       type: "string",
-      description: "NPM registry URL",
-      alias: "r",
-    },
-    skipBuild: {
-      type: "boolean",
-      description: "Skip build step",
-    },
-    skipTests: {
-      type: "boolean",
-      description: "Skip test step",
+      description: "One-time password for 2FA",
     },
   },
   async run({ args }) {
     try {
-      const cwd = process.cwd();
+      const { config } = await loadConfig();
 
       const options: PublishOptions = {
         tag: args.tag,
-        stable: args.stable,
-        latest: args.latest,
-        dryRun: args.dryRun,
-        access: args.access as "public" | "private" | undefined,
-        registry: args.registry,
-        skipBuild: args.skipBuild,
-        skipTests: args.skipTests,
+        git: args.git,
+        access: (args.access as "public" | "restricted") || undefined,
+        dryRun: args["dry-run"],
+        otp: args.otp,
       };
 
-      const result = await publishPackage(cwd, options);
+      // Publish to npm
+      await publishToNpm(options, config.publish || {});
+      consola.success("Package published successfully");
 
-      if (result.dryRun) {
-        consola.success("Dry run completed successfully");
-      } else {
-        consola.success(
-          `Published ${result.packageName}@${result.version} to ${result.publishTag}`,
-        );
+      // Git operations if requested
+      if (args.git && config.publish?.git) {
+        consola.info("Creating git tag and commit...");
+
+        const packageJson = await readPackageJSON(process.cwd());
+        const version = packageJson.version;
+
+        if (version) {
+          await publishGitOperations(version, config.publish.git);
+          consola.success("Git operations completed");
+        }
       }
     } catch (error) {
-      consola.error("Failed to publish:", error);
+      consola.error("Publish failed:", error);
       process.exit(1);
     }
   },

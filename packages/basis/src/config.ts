@@ -1,3 +1,4 @@
+import { loadConfig as _loadConfig, type LoadConfigOptions } from "c12";
 import type { BasisConfig } from "./types";
 
 /**
@@ -8,50 +9,17 @@ export function defineBasisConfig(config: BasisConfig): BasisConfig {
 }
 
 /**
- * Default configuration
+ * Load Basis configuration
  */
-export const defaultConfig: BasisConfig = {
-  lint: {
-    dependencies: {
-      checkSecurity: true,
+export async function loadConfig(options: LoadConfigOptions<BasisConfig> = {}) {
+  return await _loadConfig({
+    name: "basis",
+    cwd: process.cwd(),
+    ...options,
+    defaults: {
+      ...options.defaults,
     },
-    structure: {
-      requiredFiles: ["package.json"],
-    },
-  },
-  git: {
-    hooks: {},
-    config: {
-      core: {
-        autocrlf: "input",
-      },
-    },
-    commitMsg: {
-      types: [
-        "feat",
-        "fix",
-        "docs",
-        "style",
-        "refactor",
-        "perf",
-        "test",
-        "build",
-        "ci",
-        "chore",
-        "revert",
-      ],
-    },
-    autoSetup: true,
-    autoInitGit: true,
-    skipGitCheck: false,
-    force: false,
-  },
-  version: {
-    tagPrefix: "v",
-    prereleaseId: "edge",
-  },
-  publish: {
-    defaultTag: "edge",
-    stableTag: "latest",
-  },
-};
+  });
+}
+
+export { defineBuildConfig } from "obuild/config";

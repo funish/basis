@@ -4,35 +4,46 @@ import { defineCommand, runMain } from "citty";
 import { consola } from "consola";
 import { readPackageJSON } from "pkg-types";
 
-async function main() {
-  const packageJson = await readPackageJSON(import.meta.url);
+import { initCommand } from "./commands/init";
+import { lintCommand } from "./commands/lint";
+import { fmtCommand } from "./commands/fmt";
+import { checkCommand } from "./commands/check";
+import { buildCommand } from "./commands/build";
+import { gitCommand } from "./commands/git";
+import { runCommand } from "./commands/run";
+import { versionCommand } from "./commands/version";
+import { publishCommand } from "./commands/publish";
+import { auditCommand } from "./commands/audit";
+import { addCommand } from "./commands/add";
+import { removeCommand } from "./commands/remove";
+import { dlxCommand } from "./commands/dlx";
 
-  const cli = defineCommand({
-    meta: {
-      name: "basis",
-      version: packageJson.version || "",
-      description: packageJson.description || "",
-    },
-    subCommands: {
-      init: () => import("./commands/init").then((m) => m.default),
-      config: () => import("./commands/config").then((m) => m.default),
-      lint: () => import("./commands/lint").then((m) => m.lint),
-      git: () => import("./commands/git").then((m) => m.git),
-      // Package management commands (using nypm)
-      install: () => import("./commands/install").then((m) => m.default),
-      i: () => import("./commands/install").then((m) => m.default),
-      add: () => import("./commands/add").then((m) => m.default),
-      remove: () => import("./commands/remove").then((m) => m.default),
-      rm: () => import("./commands/remove").then((m) => m.default),
-      uninstall: () => import("./commands/remove").then((m) => m.default),
-      run: () => import("./commands/run").then((m) => m.default),
-      // Version and publish commands
-      version: () => import("./commands/version").then((m) => m.default),
-      publish: () => import("./commands/publish").then((m) => m.default),
-    },
-  });
+const packageJson = await readPackageJSON(import.meta.url);
 
-  await runMain(cli);
-}
+const main = defineCommand({
+  meta: {
+    name: "basis",
+    description: packageJson.description,
+    version: packageJson.version,
+  },
+  subCommands: {
+    init: initCommand,
+    lint: lintCommand,
+    fmt: fmtCommand,
+    check: checkCommand,
+    build: buildCommand,
+    git: gitCommand,
+    run: runCommand,
+    version: versionCommand,
+    publish: publishCommand,
+    audit: auditCommand,
+    add: addCommand,
+    remove: removeCommand,
+    dlx: dlxCommand,
+  },
+});
 
-main().catch(consola.error);
+runMain(main).catch((error) => {
+  consola.error(error);
+  process.exit(1);
+});

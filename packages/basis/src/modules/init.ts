@@ -1,284 +1,78 @@
-import { updateConfig } from "c12/update";
+import { writeFile } from "node:fs/promises";
+import { exec } from "dugite";
+import { loadConfig } from "c12";
 import { consola } from "consola";
-import { generateCode, parseModule } from "magicast";
-import { addDevDependency, detectPackageManager } from "nypm";
-import { resolve } from "pathe";
-import {
-  findWorkspaceDir,
-  type PackageJson,
-  readPackageJSON,
-  writePackageJSON,
-} from "pkg-types";
+import { detectPackageManager } from "nypm";
 import type { InitOptions } from "../types";
-import { fileExists, getPackageManagerCommands } from "../utils";
-import { initGitRepo, setupGit } from "./git";
 
 /**
- * Configuration file format options
+ * Initialize basis configuration
  */
-const CONFIG_FORMATS = {
-  ts: { ext: "ts", label: "TypeScript" },
-  mjs: { ext: "mjs", label: "ES Module" },
-  cjs: { ext: "cjs", label: "CommonJS" },
-} as const;
+export async function initProject(
+  cwd = process.cwd(),
+  options: InitOptions = {},
+): Promise<boolean> {
+  const { force = false, skipGitCheck = false } = options;
 
-type ConfigFormat = keyof typeof CONFIG_FORMATS;
+  consola.start("Initializing basis configuration");
 
-/**
- * Generate config file content based on format using magicast programmatically
- */
-function generateConfigContent(
-  format: ConfigFormat,
-  packageManager: string = "npm",
-): string {
-  // Create base template based on format
-  const template =
-    format === "cjs"
-      ? `const { defineBasisConfig } = require("@funish/basis");\n\nmodule.exports = defineBasisConfig({});`
-      : `import { defineBasisConfig } from "@funish/basis";\n\nexport default defineBasisConfig({});`;
+  // Check if config already exists using c12
+  const result = await loadConfig({
+    cwd,
+    name: "basis",
+  });
 
-  // Parse the template
-  const mod = parseModule(template);
+  const configFile = result._configFile;
 
-  // Get package manager execution prefix
-  const { execPrefix } = getPackageManagerCommands(packageManager);
-
-  // Create config object with only user-customizable parts
-  const configObject = {
-    git: {
-      hooks: {
-        "pre-commit": `${execPrefix} basis lint --staged`,
-        "commit-msg": `${execPrefix} basis git --lint-commit`,
-      },
-    },
-  };
-
-  // Get the function call argument (the config object)
-  const functionCall =
-    format === "cjs" ? mod.exports.default : mod.exports.default;
-  const configArg = functionCall.$args[0];
-
-  // Replace empty object with our config structure
-  Object.assign(configArg, configObject);
-
-  // Add comments to the config object
-  configArg.$ast.leadingComments = [
-    {
-      type: "Block",
-      value:
-        "\n  Configure your project here\n  See: https://github.com/funish/basis/tree/main/packages/basis#configuration\n  ",
-    },
-  ];
-
-  return generateCode(mod).code;
-}
-
-/**
- * Detect recommended config format based on project
- */
-async function detectConfigFormat(cwd: string): Promise<ConfigFormat> {
-  // Check for TypeScript config
-  if (await fileExists(resolve(cwd, "tsconfig.json"))) {
-    return "ts";
-  }
-
-  // Check package.json for type: "module"
-  try {
-    const pkg = await readPackageJSON(cwd);
-    if (pkg.type === "module") {
-      return "mjs";
-    }
-  } catch {
-    // Ignore error, fallback to default
-  }
-
-  return "ts"; // Default to TypeScript
-}
-
-/**
- * Initialize basis configuration in the current project
- */
-export async function init(cwd = process.cwd(), options: InitOptions = {}) {
-  const { force = false, skipGitCheck = false, skipInstall = false } = options;
-
-  consola.start("Initializing basis configuration...");
-
-  // Detect recommended config format
-  const recommendedFormat = await detectConfigFormat(cwd);
-
-  // Ask user for config format
-  const configFormat = (await consola.prompt("Choose config file format:", {
-    type: "select",
-    initial: recommendedFormat,
-    options: Object.entries(CONFIG_FORMATS).map(([value, { label, ext }]) => ({
-      value,
-      label: `${label} (${ext}) ${recommendedFormat === value ? "(recommended)" : ""}`,
-    })),
-  })) as ConfigFormat;
-
-  const configExtension = CONFIG_FORMATS[configFormat].ext;
-  const configFileName = `basis.config.${configExtension}`;
-  const configPath = resolve(cwd, configFileName);
-
-  // Check if config already exists
-  if ((await fileExists(configPath)) && !force) {
-    consola.error(
-      `${configFileName} already exists. Use --force to overwrite.`,
-    );
+  if (configFile && !force) {
+    consola.error(`Configuration file already exists: ${configFile}`);
+    consola.info("Use --force to overwrite.");
     return false;
-  }
-
-  // Check if .git directory exists and ask about git setup
-  let shouldSetupGit = false;
-  if (!skipGitCheck) {
-    const hasGit = await fileExists(resolve(cwd, ".git"));
-
-    if (hasGit) {
-      shouldSetupGit = await consola.prompt(
-        "Setup Git hooks and configuration?",
-        {
-          type: "confirm",
-          initial: true,
-        },
-      );
-    } else {
-      consola.info("No Git repository found.");
-      const shouldInitGit = await consola.prompt("Initialize Git repository?", {
-        type: "confirm",
-        initial: true,
-      });
-
-      if (shouldInitGit) {
-        // Initialize Git repository first
-        try {
-          const gitInitSuccess = await initGitRepo(cwd);
-          if (gitInitSuccess) {
-            shouldSetupGit = await consola.prompt(
-              "Setup Git hooks and configuration?",
-              {
-                type: "confirm",
-                initial: true,
-              },
-            );
-          } else {
-            consola.warn("Git initialization failed, skipping Git setup");
-            shouldSetupGit = false;
-          }
-        } catch (error) {
-          consola.error("Failed to initialize Git repository:", error);
-          consola.warn("Skipping Git setup");
-          shouldSetupGit = false;
-        }
-      } else {
-        consola.info("Skipping Git initialization");
-        shouldSetupGit = false;
-      }
-    }
   }
 
   // Detect package manager for hooks generation
   const detected = await detectPackageManager(cwd);
-  const detectedPackageManager = detected?.name || "npm";
+  const packageManager = detected?.name || "npm";
+  const prefix = packageManager === "npm" ? "npx" : packageManager;
 
-  // Create config file
-  await updateConfig({
-    cwd,
-    configFile: "basis.config",
-    createExtension: `.${configExtension}`,
-    onCreate: () => {
-      return generateConfigContent(configFormat, detectedPackageManager);
-    },
-  });
-
-  // Ask about dependency installation
-  let shouldInstallDeps = false;
-  if (!skipInstall) {
-    shouldInstallDeps = await consola.prompt(
-      "Install @funish/basis dependency now?",
-      {
-        type: "confirm",
-        initial: true,
+  // Create config content
+  const configObject = {
+    git: {
+      hooks: {
+        "pre-commit": `${prefix} basis git staged`,
+        "commit-msg": `${prefix} basis git lint-commit`,
       },
-    );
-  }
+      staged: {
+        rules: {
+          "*.{ts,tsx,js,jsx}": "basis lint --fix",
+          "*.{json,md,yml,yaml}": "basis fmt --write",
+        },
+      },
+    },
+  };
 
-  // Check workspace configuration
-  const workspaceDir = await findWorkspaceDir(cwd);
-  const isWorkspaceRoot = workspaceDir === cwd;
+  const configContent = `import { defineBasisConfig } from "@funish/basis/config";
 
-  // Install dependencies if requested
-  if (shouldInstallDeps) {
+export default defineBasisConfig(${JSON.stringify(configObject, null, 2)});
+`;
+
+  // Write config file (always .ts format)
+  const configFilePath = `${cwd}/basis.config.ts`;
+  await writeFile(configFilePath, configContent, "utf8");
+  consola.success(`Configuration created in ${configFilePath}`);
+
+  // Setup Git if available
+  if (!skipGitCheck) {
     try {
-      // Use workspace option for addDevDependency
-      await addDevDependency(["@funish/basis"], {
-        workspace: isWorkspaceRoot,
-      });
-    } catch (error) {
-      consola.error("Failed to install @funish/basis:", error);
-      consola.info(
-        "You can install it manually with: basis add -D @funish/basis",
-      );
+      await exec(["--version"], cwd);
+      consola.info("Git detected");
+    } catch {
+      consola.info("Git not found");
     }
   }
 
-  // Add git setup script to package.json if needed
-  if (shouldSetupGit) {
-    try {
-      const packageJsonPath = resolve(cwd, "package.json");
-
-      if (await fileExists(packageJsonPath)) {
-        const pkg: PackageJson = await readPackageJSON(packageJsonPath);
-
-        // Use already detected package manager
-        const packageManager = detectedPackageManager;
-
-        // Add git setup script
-        const hookInstallCommand = "basis git setup";
-        pkg.scripts = pkg.scripts || {};
-
-        // Determine script name based on package manager
-        const scriptName =
-          packageManager === "yarn" ? "prepare" : "postinstall";
-        const existingScript = pkg.scripts[scriptName];
-
-        let scriptAdded = false;
-        // Only add if not already included
-        if (!existingScript?.includes(hookInstallCommand)) {
-          pkg.scripts[scriptName] = existingScript
-            ? `${existingScript} && ${hookInstallCommand}`
-            : hookInstallCommand;
-          scriptAdded = true;
-        }
-
-        if (scriptAdded) {
-          await writePackageJSON(packageJsonPath, pkg);
-        }
-      } else {
-        consola.warn(
-          "No package.json found. You'll need to run git setup manually.",
-        );
-      }
-    } catch (error) {
-      consola.error("Failed to update package.json:", error);
-      consola.warn(
-        "You can manually add 'basis git setup' to your postinstall script",
-      );
-    }
-  }
-
-  // Only setup Git manually if dependencies were NOT installed
-  // (because postinstall scripts already ran Git setup)
-  if (shouldSetupGit && !shouldInstallDeps) {
-    const gitSuccess = await setupGit(cwd);
-    if (!gitSuccess) {
-      consola.warn(
-        "Git setup failed, but basis config was created successfully",
-      );
-    }
-  }
-
-  // Final success message - users need to know init completed
   consola.success("Basis initialization completed!");
+  consola.info("Run 'basis git setup' to setup Git hooks");
 
   return true;
 }

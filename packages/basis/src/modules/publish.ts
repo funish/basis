@@ -1,215 +1,129 @@
-import { execSync } from "node:child_process";
-import { consola } from "consola";
-import { detectPackageManager, runScript } from "nypm";
+import { spawn, execSync } from "node:child_process";
+import { exec } from "dugite";
 import { readPackageJSON } from "pkg-types";
-import semver from "semver";
-import type { PublishConfig, PublishOptions, PublishResult } from "../types";
-import { loadConfig } from "../utils";
-
-/**
- * Determine publish tag based on version and options
- */
-function determinePublishTag(
-  version: string,
-  options: PublishOptions,
-  config: PublishConfig,
-): string {
-  if (options.tag) {
-    return options.tag;
-  }
-
-  if (options.stable || options.latest) {
-    return config.stableTag || "latest";
-  }
-
-  if (semver.prerelease(version)) {
-    const prerelease = semver.prerelease(version);
-    return (
-      (prerelease && (prerelease[0] as string)) || config.defaultTag || "edge"
-    );
-  }
-
-  return config.stableTag || "latest";
-}
-
-/**
- * Run pre-publish checks
- */
-async function runPrePublishChecks(
-  cwd: string,
-  config: PublishConfig,
-  options: PublishOptions,
-): Promise<void> {
-  // Check git status
-  if (config.checkGitClean && !options.skipTests) {
-    try {
-      const status = execSync("git status --porcelain", {
-        cwd,
-        encoding: "utf8",
-      });
-      if (status.trim()) {
-        throw new Error(
-          "Working directory is not clean. Commit your changes first.",
-        );
-      }
-    } catch (error) {
-      consola.warn("Could not check git status:", error);
-    }
-  }
-
-  // Run tests
-  if (config.checkTests && !options.skipTests) {
-    consola.start("Running tests...");
-    try {
-      if (config.testCommand) {
-        execSync(config.testCommand, { cwd, stdio: "inherit" });
-      } else {
-        await runScript("test", { cwd, silent: false });
-      }
-    } catch (error) {
-      consola.error("Tests failed");
-      throw error;
-    }
-  }
-
-  // Run build
-  if (config.buildCommand && !options.skipBuild) {
-    consola.start("Building package...");
-    try {
-      if (config.buildCommand.includes(" ")) {
-        // Custom command with arguments, use execSync
-        execSync(config.buildCommand, { cwd, stdio: "inherit" });
-      } else {
-        // Simple script name, use runScript
-        await runScript(config.buildCommand, { cwd, silent: false });
-      }
-    } catch (error) {
-      consola.error("Build failed");
-      throw error;
-    }
-  }
-}
-
-/**
- * Run post-publish actions
- */
-async function runPostPublishActions(
-  cwd: string,
-  config: PublishConfig,
-): Promise<void> {
-  if (config.autoGitPush) {
-    try {
-      execSync("git push", { cwd });
-      if (config.createGitTag) {
-        execSync("git push --tags", { cwd });
-      }
-    } catch (error) {
-      consola.warn("Failed to push changes:", error);
-    }
-  }
-}
+import { detectPackageManager } from "nypm";
+import type { PublishConfig, PublishOptions } from "../types";
 
 /**
  * Publish package to npm registry
  */
-export async function publishPackage(
-  cwd: string,
-  options: PublishOptions = {},
-): Promise<PublishResult> {
-  const { config } = await loadConfig({ cwd });
-  const publishConfig = config.publish || {};
-
-  // Read package.json using pkg-types
+export async function publishToNpm(options: PublishOptions, config: PublishConfig): Promise<void> {
+  const cwd = process.cwd();
   const packageJson = await readPackageJSON(cwd);
-  const { name: packageName, version } = packageJson;
+  const version = packageJson.version;
+  const packageName = packageJson.name;
 
-  if (!packageName || !version) {
-    throw new Error(
-      "Missing name or version in package.json. Please ensure your package.json contains valid 'name' and 'version' fields.",
-    );
+  if (!packageName) {
+    throw new Error("Package name is required in package.json");
   }
 
-  // Validate version format
-  if (!semver.valid(version)) {
-    throw new Error(
-      `Invalid version format in package.json: ${version}. Please use semantic versioning format (e.g., 1.0.0, 2.1.0-alpha.1)`,
-    );
+  if (!version) {
+    throw new Error("Package version is required in package.json");
   }
 
   // Detect package manager
-  const packageManager = await detectPackageManager(cwd);
-  const pmCommand = packageManager?.command || "npm";
+  const detected = await detectPackageManager(cwd);
+  const packageManager = detected?.name || "npm";
 
-  // Run pre-publish checks
-  await runPrePublishChecks(cwd, publishConfig, options);
+  // NPM config with defaults
+  const npmConfig = config.npm || { tag: "latest", access: "public" };
 
-  // Determine publish tag
-  const publishTag = determinePublishTag(version, options, publishConfig);
-
-  // Build publish command using detected package manager
-  const publishArgs = [
-    "publish",
-    "--tag",
-    publishTag,
-    "--access",
-    options.access || publishConfig.access || "public",
-  ];
-
-  if (options.registry || publishConfig.registry) {
-    publishArgs.push(
-      "--registry",
-      options.registry || publishConfig.registry || "",
-    );
-  }
-
-  if (options.dryRun) {
-    publishArgs.push("--dry-run");
-  }
-
-  const publishCommand = `${pmCommand} ${publishArgs.join(" ")}`;
-
-  consola.start("Publishing package...");
-
-  try {
-    execSync(publishCommand, { cwd, stdio: "inherit" });
-
-    if (!options.dryRun) {
-      // Note: Final success message is handled by the command layer
-
-      // Always publish to defaultTag (edge) as well, unless it's the same tag
-      const defaultTag = publishConfig.defaultTag || "edge";
-      if (publishTag !== defaultTag) {
-        consola.start(`Also publishing to ${defaultTag} tag...`);
-
-        try {
-          // Build dist-tag command based on package manager
-          let distTagCommand: string;
-
-          if (packageManager?.name === "yarn") {
-            distTagCommand = `${pmCommand} tag add ${packageName}@${version} ${defaultTag}`;
-          } else {
-            // npm, pnpm, bun all use dist-tag syntax
-            distTagCommand = `${pmCommand} dist-tag add ${packageName}@${version} ${defaultTag}`;
-          }
-
-          execSync(distTagCommand, { cwd, stdio: "inherit" });
-        } catch (error) {
-          consola.warn(`Failed to add ${defaultTag} tag:`, error);
-        }
+  let publishTag = options.tag;
+  if (!publishTag && version) {
+    const prerelease = version.includes("-");
+    if (prerelease) {
+      const match = version.match(/-(\w+)\.\d+$/);
+      if (match) {
+        publishTag = match[1];
       }
+    }
+  }
 
-      // Run post-publish actions
-      await runPostPublishActions(cwd, publishConfig);
+  publishTag = publishTag || npmConfig.tag || "latest";
+
+  // Build publish args
+  const buildPublishArgs = (tag: string): string[] => {
+    const args: string[] = [];
+
+    if (options.tarball) {
+      args.push(options.tarball);
     }
 
-    return {
-      packageName,
-      version,
-      publishTag,
-      dryRun: options.dryRun || false,
-    };
-  } catch (error) {
-    consola.error("Failed to publish package:", error);
-    throw error;
+    args.push("--tag", tag);
+
+    const access = options.access || npmConfig.access;
+    if (access) {
+      args.push("--access", access);
+    }
+
+    if (options.dryRun) {
+      args.push("--dry-run");
+    }
+
+    if (options.otp) {
+      args.push("--otp", options.otp);
+    }
+
+    return args;
+  };
+
+  // Publish to primary tag
+  const primaryArgs = buildPublishArgs(publishTag);
+  await new Promise<void>((resolve, reject) => {
+    const proc = spawn(packageManager, ["publish", ...primaryArgs], {
+      stdio: "inherit",
+      shell: true,
+    });
+    proc.on("close", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`${packageManager} publish exited with code ${code}`));
+    });
+  });
+
+  // Add additional dist-tag (unless dry run)
+  // Note: Always use npm for dist-tag as bun/deno don't support it
+  const additionalTag = npmConfig.additionalTag;
+  if (!options.dryRun && additionalTag && additionalTag !== publishTag) {
+    execSync(`npm dist-tag add ${packageName}@${version} ${additionalTag}`, {
+      cwd,
+      stdio: "inherit",
+    });
+  }
+}
+
+/**
+ * Git operations for publish
+ */
+export async function publishGitOperations(
+  version: string,
+  gitConfig?: PublishConfig["git"],
+): Promise<void> {
+  const cwd = process.cwd();
+
+  // Apply defaults from config.ts
+  const tagPrefix = gitConfig?.tagPrefix;
+  if (!tagPrefix) {
+    throw new Error("Git tagPrefix is required");
+  }
+
+  const tagName = `${tagPrefix}${version}`;
+
+  const commitMessage = gitConfig?.message
+    ? gitConfig.message(version)
+    : `chore: release ${tagName}`;
+
+  // Add and commit
+  await exec(["add", "package.json"], cwd);
+
+  await exec(["commit", "-m", commitMessage], cwd);
+
+  // Create tag
+  const tagArgs = ["tag", tagName, ...(gitConfig?.signTag ? ["--sign"] : [])];
+  await exec(tagArgs, cwd);
+
+  // Push if configured
+  if (gitConfig?.push) {
+    await exec(["push"], cwd);
+    await exec(["push", "--tags"], cwd);
   }
 }

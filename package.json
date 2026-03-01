@@ -1,55 +1,55 @@
 {
   "name": "basis-monorepo",
   "version": "0.0.0",
-  "description": "Monorepo for @funish/basis - A unified development toolkit with CLI, package management, versioning, publishing, linting, and git hooks.",
   "private": true,
-  "scripts": {
-    "dev": "pnpm -r prepack --stub",
-    "build": "pnpm -r prepack",
-    "lint": "basis lint --all",
-    "postinstall": "pnpm dev && basis git setup"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/funish/basis.git"
-  },
+  "description": "Monorepo for @funish/basis - A unified development toolkit with CLI, package management, versioning, publishing, linting, and git hooks.",
   "keywords": [
     "basis",
-    "development-toolkit",
-    "cli",
-    "package-management",
-    "version-management",
-    "publishing",
-    "linting",
-    "git-hooks",
-    "typescript",
-    "javascript",
-    "developer-experience",
-    "code-quality",
-    "modern-development",
-    "unjs",
-    "nypm",
-    "semver",
     "citty",
-    "monorepo"
+    "cli",
+    "code-quality",
+    "developer-experience",
+    "development-toolkit",
+    "git-hooks",
+    "javascript",
+    "linting",
+    "modern-development",
+    "monorepo",
+    "nypm",
+    "package-management",
+    "publishing",
+    "semver",
+    "typescript",
+    "unjs",
+    "version-management"
   ],
+  "homepage": "https://github.com/funish/basis#readme",
+  "bugs": {
+    "url": "https://github.com/funish/basis/issues"
+  },
+  "license": "MIT",
   "author": {
     "name": "Funish",
     "email": "official@funish.net",
     "url": "https://funish.net/"
   },
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/funish/basis/issues"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/funish/basis.git"
   },
-  "homepage": "https://github.com/funish/basis#readme",
+  "scripts": {
+    "dev": "pnpm -r dev",
+    "build": "pnpm -r build",
+    "lint": "basis lint",
+    "fmt": "basis fmt",
+    "check": "basis check",
+    "postinstall": "pnpm build && basis git setup"
+  },
   "devDependencies": {
     "@funish/basis": "workspace:*",
-    "@prettier/plugin-oxc": "0.0.4",
     "@types/node": "24.8.1",
-    "oxlint": "1.23.0",
-    "prettier": "3.6.2",
-    "unbuild": "3.6.1"
+    "obuild": "0.4.31",
+    "oxlint-tsgolint": "0.15.0"
   },
   "packageManager": "pnpm@10.18.3+sha512.bbd16e6d7286fd7e01f6b3c0b3c932cda2965c06a908328f74663f10a9aea51f1129eea615134bf992831b009eabe167ecb7008b597f40ff9bc75946aadfb08d"
 }

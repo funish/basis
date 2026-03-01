@@ -1,12 +1,17 @@
-import { defineBuildConfig } from "unbuild";
+import { defineBuildConfig } from "./src/config";
 
 export default defineBuildConfig({
-  declaration: true,
-  entries: ["src/index", "src/cli", "src/config"],
-  rollup: {
-    emitCJS: true,
-    esbuild: {
+  entries: [
+    {
+      type: "bundle",
+      input: ["src/index", "src/cli", "src/config"],
       minify: true,
     },
-  },
+    {
+      type: "transform",
+      input: "src/commands/",
+      outDir: "dist/commands/",
+      minify: true,
+    },
+  ],
 });
