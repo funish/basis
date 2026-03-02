@@ -1,8 +1,8 @@
 import { readFile, writeFile, stat } from "node:fs/promises";
-import { spawn } from "node:child_process";
+import { execSync } from "node:child_process";
 import { exec } from "dugite";
 import { consola } from "consola";
-import micromatch from "micromatch";
+import { isMatch } from "picomatch";
 import { resolve } from "pathe";
 import type { StagedConfig } from "../types";
 import { loadConfig } from "../config";
@@ -56,7 +56,7 @@ export async function lintStagedFiles(cwd = process.cwd()): Promise<boolean> {
     // Match files against pattern
     const matchedFiles = files.filter(
       (file) =>
-        !processedFiles.has(file) && micromatch.isMatch(file.split("/").pop() || file, pattern),
+        !processedFiles.has(file) && isMatch(file, pattern),
     );
 
     if (matchedFiles.length === 0) continue;
@@ -68,16 +68,9 @@ export async function lintStagedFiles(cwd = process.cwd()): Promise<boolean> {
       const [cmd, ...cmdArgs] = command.split(" ");
 
       // Execute the external command
-      await new Promise<void>((resolve, reject) => {
-        const proc = spawn(cmd, cmdArgs, {
-          cwd,
-          stdio: "inherit",
-          shell: true,
-        });
-        proc.on("close", (code: number | null) => {
-          if (code === 0) resolve();
-          else reject(new Error(`Command exited with code ${code}`));
-        });
+      execSync(`${cmd} ${cmdArgs.join(" ")}`, {
+        cwd,
+        stdio: "inherit",
       });
 
       // Re-stage the linted files after potential modifications

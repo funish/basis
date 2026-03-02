@@ -1,0 +1,72 @@
+{
+  "name": "@funish/build",
+  "version": "0.0.0",
+  "description": "Modern build system powered by Rolldown with Jiti stub support and Oxc transformation",
+  "keywords": [
+    "build",
+    "bundling",
+    "rolldown",
+    "oxc",
+    "jiti",
+    "stub",
+    "transform",
+    "typescript",
+    "zero-config",
+    "cli",
+    "development-toolkit"
+  ],
+  "homepage": "https://github.com/funish/basis#readme",
+  "bugs": {
+    "url": "https://github.com/funish/basis/issues"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Funish",
+    "email": "official@funish.net",
+    "url": "https://funish.net/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/funish/basis.git",
+    "directory": "packages/build"
+  },
+  "bin": {
+    "isbuild": "dist/cli.mjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "dist/index.mjs",
+  "types": "dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./config": {
+      "types": "./dist/config.d.mts",
+      "import": "./dist/config.mjs"
+    }
+  },
+  "scripts": {
+    "dev": "jiti src/cli.ts --stub",
+    "build": "jiti src/cli.ts",
+    "prepack": "pnpm build"
+  },
+  "dependencies": {
+    "c12": "4.0.0-beta.3",
+    "citty": "0.2.1",
+    "consola": "3.4.2",
+    "defu": "6.1.4",
+    "exsolve": "1.0.8",
+    "jiti": "2.6.1",
+    "magic-string": "0.30.21",
+    "mlly": "1.8.0",
+    "pathe": "2.0.3",
+    "pkg-types": "1.3.1",
+    "pretty-bytes": "7.1.0",
+    "rolldown": "1.0.0-rc.6",
+    "rolldown-plugin-dts": "0.22.2",
+    "tinyglobby": "0.2.15"
+  }
+}

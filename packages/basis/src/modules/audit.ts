@@ -2,7 +2,7 @@ import { stat } from "node:fs/promises";
 import { execSync } from "node:child_process";
 import { consola } from "consola";
 import { detectPackageManager } from "nypm";
-import fg from "fast-glob";
+import { glob } from "tinyglobby";
 import { readPackageJSON, resolvePackageJSON } from "pkg-types";
 import { resolve } from "pathe";
 import type { AuditConfig } from "../types";
@@ -195,13 +195,13 @@ export async function auditDependencies(
  */
 export async function findNodeModulesPackages(cwd: string): Promise<string[]> {
   try {
-    return await fg(
+    return await glob(
       [
         "node_modules/*/package.json",
         "node_modules/@*/*/package.json",
         "node_modules/@*/*/*/package.json",
       ],
-      { cwd, onlyFiles: true, absolute: true },
+      { cwd, absolute: true },
     );
   } catch {
     return [];
@@ -237,7 +237,7 @@ export async function auditStructure(
         // Check if it's a glob pattern or simple path
         if (pattern.includes("*") || pattern.includes("?")) {
           // For glob patterns, check if any file matches
-          const matches = await fg(pattern, { cwd });
+          const matches = await glob([pattern], { cwd });
           if (matches.length === 0) {
             missing.push(pattern);
           }
@@ -257,7 +257,7 @@ export async function auditStructure(
   if (structConfig.files && structConfig.files.length > 0) {
     for (const rule of structConfig.files) {
       try {
-        const matches = await fg(rule.pattern, { cwd });
+        const matches = await glob([rule.pattern], { cwd });
         const regex = new RegExp(rule.rule);
 
         const invalidFiles = matches.filter((file) => !regex.test(file));
@@ -279,7 +279,7 @@ export async function auditStructure(
   if (structConfig.dirs && structConfig.dirs.length > 0) {
     for (const rule of structConfig.dirs) {
       try {
-        const matches = await fg(rule.pattern, { cwd });
+        const matches = await glob([rule.pattern], { cwd });
         const regex = new RegExp(rule.rule);
 
         const invalidDirs = matches.filter((dir) => !regex.test(dir));

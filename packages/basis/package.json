@@ -1,6 +1,6 @@
 {
   "name": "@funish/basis",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A modern development toolkit with unified CLI for package management, versioning, publishing, code quality, and Git workflow automation.",
   "keywords": [
     "basis",
@@ -36,7 +36,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/funish/basis.git"
+    "url": "git+https://github.com/funish/basis.git",
+    "directory": "packages/basis"
   },
   "bin": {
     "basis": "dist/cli.mjs"
@@ -61,25 +62,26 @@
     }
   },
   "scripts": {
-    "dev": "obuild --stub",
-    "build": "obuild",
+    "dev": "isbuild --stub",
+    "build": "isbuild",
     "prepack": "pnpm build"
   },
   "dependencies": {
+    "@funish/build": "workspace:*",
     "c12": "4.0.0-beta.3",
     "citty": "0.2.1",
     "consola": "3.4.2",
     "dugite": "3.2.0",
-    "fast-glob": "3.3.3",
     "jiti": "2.6.1",
-    "micromatch": "4.0.8",
     "nypm": "0.6.5",
     "pathe": "2.0.3",
+    "picomatch": "4.0.3",
     "pkg-types": "2.3.0",
-    "semver": "7.7.4"
+    "semver": "7.7.4",
+    "tinyglobby": "0.2.15"
   },
   "devDependencies": {
-    "@types/micromatch": "4.0.10",
+    "@types/picomatch": "4.0.2",
     "@types/semver": "7.7.1",
     "oxlint-tsgolint": "0.15.0"
   },

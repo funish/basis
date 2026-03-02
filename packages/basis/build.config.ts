@@ -1,4 +1,4 @@
-import { defineBuildConfig } from "./src/config";
+import { defineBuildConfig } from "@funish/build/config";
 
 export default defineBuildConfig({
   entries: [

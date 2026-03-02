@@ -22,4 +22,4 @@ export async function loadConfig(options: LoadConfigOptions<BasisConfig> = {}) {
   });
 }
 
-export { defineBuildConfig } from "obuild/config";
+export { defineBuildConfig } from "@funish/build/config";

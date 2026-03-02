@@ -1,4 +1,4 @@
-import { spawn, execSync } from "node:child_process";
+import { execSync } from "node:child_process";
 import { exec } from "dugite";
 import { readPackageJSON } from "pkg-types";
 import { detectPackageManager } from "nypm";
@@ -69,15 +69,8 @@ export async function publishToNpm(options: PublishOptions, config: PublishConfi
 
   // Publish to primary tag
   const primaryArgs = buildPublishArgs(publishTag);
-  await new Promise<void>((resolve, reject) => {
-    const proc = spawn(packageManager, ["publish", ...primaryArgs], {
-      stdio: "inherit",
-      shell: true,
-    });
-    proc.on("close", (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`${packageManager} publish exited with code ${code}`));
-    });
+  execSync(`${packageManager} publish ${primaryArgs.join(" ")}`, {
+    stdio: "inherit",
   });
 
   // Add additional dist-tag (unless dry run)
