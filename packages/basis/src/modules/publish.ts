@@ -1,5 +1,6 @@
 import { execSync } from "node:child_process";
 import { exec } from "dugite";
+import { consola } from "consola";
 import { readPackageJSON } from "pkg-types";
 import { detectPackageManager } from "nypm";
 import type { PublishConfig, PublishOptions } from "../types";
@@ -26,7 +27,11 @@ export async function publishToNpm(options: PublishOptions, config: PublishConfi
   const packageManager = detected?.name || "npm";
 
   // NPM config with defaults
-  const npmConfig = config.npm || { tag: "latest", access: "public" };
+  const npmConfig = {
+    tag: "latest",
+    access: "public",
+    ...config.npm,
+  };
 
   let publishTag = options.tag;
   if (!publishTag && version) {
@@ -81,6 +86,8 @@ export async function publishToNpm(options: PublishOptions, config: PublishConfi
       cwd,
       stdio: "inherit",
     });
+  } else if (additionalTag) {
+    consola.info(`Skipping dist-tag ${additionalTag} (same as publish tag ${publishTag})`);
   }
 }
 

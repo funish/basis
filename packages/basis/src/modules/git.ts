@@ -2,7 +2,7 @@ import { readFile, writeFile, stat } from "node:fs/promises";
 import { execSync } from "node:child_process";
 import { exec } from "dugite";
 import { consola } from "consola";
-import { isMatch } from "picomatch";
+import picomatch from "picomatch";
 import { resolve } from "pathe";
 import type { StagedConfig } from "../types";
 import { loadConfig } from "../config";
@@ -56,7 +56,7 @@ export async function lintStagedFiles(cwd = process.cwd()): Promise<boolean> {
     // Match files against pattern
     const matchedFiles = files.filter(
       (file) =>
-        !processedFiles.has(file) && isMatch(file, pattern),
+        !processedFiles.has(file) && picomatch(file, pattern),
     );
 
     if (matchedFiles.length === 0) continue;

@@ -1,9 +1,11 @@
 import { defineCommand, type CommandDef, type ArgsDef } from "citty";
 import { consola } from "consola";
 import { readPackageJSON } from "pkg-types";
+import { resolve, dirname } from "pathe";
+import { existsSync } from "node:fs";
 import { loadConfig } from "../config";
 import { publishToNpm, publishGitOperations } from "../modules/publish";
-import type { PublishOptions } from "../types";
+import type { PublishOptions, PublishConfig } from "../types";
 
 export const publishCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
   meta: {
@@ -34,7 +36,23 @@ export const publishCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
   },
   async run({ args }) {
     try {
-      const { config } = await loadConfig();
+      // Try to find config file in parent directories
+      let cwd = process.cwd();
+      let configPath: string | undefined;
+
+      // If in packages subdirectory, search in parent directories
+      while (cwd !== dirname(cwd)) {
+        const testPath = resolve(cwd, "basis.config.ts");
+        if (existsSync(testPath)) {
+          configPath = testPath;
+          break;
+        }
+        cwd = dirname(cwd);
+      }
+
+      const { config } = await loadConfig({
+        cwd: configPath ? dirname(configPath) : process.cwd(),
+      });
 
       const options: PublishOptions = {
         tag: args.tag,
