@@ -19,8 +19,6 @@ export async function loadConfig(options: LoadConfigOptions<BasisConfig> = {}) {
     defaults: {
       ...options.defaults,
     },
-    // Force searching in parent directories
-    configFile: "basis.config",
   });
 }
 
