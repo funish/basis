@@ -31,7 +31,7 @@ export async function getStagedFiles(cwd: string): Promise<string[]> {
  * Lint staged files
  */
 export async function lintStagedFiles(cwd = process.cwd()): Promise<boolean> {
-  const { config } = await loadConfig({ cwd });
+  const { config } = await loadConfig(); // Will automatically search upward
   const stagedConfig = config.git?.staged as StagedConfig | undefined;
   const rules = stagedConfig?.rules || {};
 
@@ -54,9 +54,10 @@ export async function lintStagedFiles(cwd = process.cwd()): Promise<boolean> {
 
   for (const [pattern, command] of Object.entries(rules)) {
     // Match files against pattern
+    const isMatch = picomatch(pattern);
     const matchedFiles = files.filter(
       (file) =>
-        !processedFiles.has(file) && picomatch(file, pattern),
+        !processedFiles.has(file) && isMatch(file),
     );
 
     if (matchedFiles.length === 0) continue;
@@ -152,7 +153,7 @@ export function parseCommitMessage(message: string): {
  * Validate commit message
  */
 export async function lintCommitMessage(cwd = process.cwd()): Promise<boolean> {
-  const { config } = await loadConfig({ cwd });
+  const { config } = await loadConfig(); // Will automatically search upward
   const commitMsgConfig = config.git?.commitMsg;
 
   const types = commitMsgConfig?.types || DEFAULT_TYPES;
@@ -225,7 +226,7 @@ export async function lintCommitMessage(cwd = process.cwd()): Promise<boolean> {
  * Setup Git hooks
  */
 export async function setupGitHooks(cwd = process.cwd()): Promise<boolean> {
-  const { config } = await loadConfig({ cwd });
+  const { config } = await loadConfig(); // Will automatically search upward
   const hooks = config.git?.hooks;
 
   if (!hooks || Object.keys(hooks).length === 0) {

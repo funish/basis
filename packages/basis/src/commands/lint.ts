@@ -11,8 +11,8 @@ export const lintCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
   async run({ rawArgs }) {
     const cwd = process.cwd();
 
-    // Load config
-    const { config } = await loadConfig({ cwd });
+    // Load config (will automatically search upward)
+    const { config } = await loadConfig();
     const configArgs = (config.lint?.config as string[]) || [];
 
     // Combine config args with user args (config first, then user args to allow override)

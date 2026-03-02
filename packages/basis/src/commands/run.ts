@@ -18,8 +18,8 @@ export const runCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
     const [scriptOrFile, ...scriptArgs] = rawArgs;
     const cwd = process.cwd();
 
-    // Load config for jiti options
-    const { config } = await loadConfig({ cwd });
+    // Load config for jiti options (will automatically search upward)
+    const { config } = await loadConfig();
     const jitiOptions = config.run?.config;
 
     // Try runScript first (package.json script)

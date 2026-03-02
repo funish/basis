@@ -49,7 +49,6 @@ export async function auditDependencies(
   _fix = false,
 ): Promise<boolean> {
   const { config: loadedConfig } = await loadConfig({
-    cwd,
     overrides: config ? { audit: { dependencies: config } } : undefined,
   });
   const depsConfig = loadedConfig.audit?.dependencies || {};
@@ -216,7 +215,6 @@ export async function auditStructure(
   config?: AuditConfig["structure"],
 ): Promise<boolean> {
   const { config: loadedConfig } = await loadConfig({
-    cwd,
     overrides: config ? { audit: { structure: config } } : undefined,
   });
   const structConfig = loadedConfig.audit?.structure || {};
@@ -308,7 +306,7 @@ export async function auditStructure(
  * Run all audits
  */
 export async function auditAll(cwd = process.cwd(), fix = false): Promise<boolean> {
-  const { config } = await loadConfig({ cwd });
+  const { config } = await loadConfig(); // Will automatically search upward
   const auditConfig = config.audit || {};
 
   consola.start("Running comprehensive project audit...");
