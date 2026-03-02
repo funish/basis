@@ -213,7 +213,6 @@ export async function createJitiStub(
         : "",
     ].join("\n");
     await writeFile(output.replace(/\.mjs$/, ".d.mts"), dtsContent);
-    await writeFile(output.replace(/\.mjs$/, ".d.ts"), dtsContent);
 
     if (shebang) {
       await makeExecutable(output);

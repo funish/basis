@@ -100,7 +100,7 @@ export async function rolldownBuild(
     dir: outDir,
     format: "esm",
     entryFileNames: "[name].mjs",
-    chunkFileNames: "_chunks/[name].mjs",
+    chunkFileNames: "_chunks/[name]-[hash].mjs",
     minify: entry.minify ?? "dce-only",
     codeSplitting: {
       groups: [
@@ -110,7 +110,7 @@ export async function rolldownBuild(
             const pkgName = moduleId.match(/.*\/node_modules\/(?<package>@[^/]+\/[^/]+|[^/]+)/)
               ?.groups?.package;
             const isDts = /\.d\.[mc]?ts$/.test(moduleId);
-            return `libs/${pkgName || "common"}${isDts ? ".d" : ""}`;
+            return `vendor/${pkgName || "common"}${isDts ? ".d" : ""}`;
           },
         },
       ],
