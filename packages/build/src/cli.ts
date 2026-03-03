@@ -44,20 +44,20 @@ const buildCommand = defineCommand({
             type: "transform",
             input,
             outDir,
-            stub: args.stub
+            stub: args.stub,
           } as BuildEntry;
         } else {
           return {
             type: "bundle",
             input: input.split(","),
             outDir,
-            stub: args.stub
+            stub: args.stub,
           } as BuildEntry;
         }
       }
       return {
         ...entry,
-        stub: args.stub
+        stub: args.stub,
       } as BuildEntry;
     });
 

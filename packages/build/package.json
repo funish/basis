@@ -5,15 +5,15 @@
   "keywords": [
     "build",
     "bundling",
-    "rolldown",
-    "oxc",
+    "cli",
+    "development-toolkit",
     "jiti",
+    "oxc",
+    "rolldown",
     "stub",
     "transform",
     "typescript",
-    "zero-config",
-    "cli",
-    "development-toolkit"
+    "zero-config"
   ],
   "homepage": "https://github.com/funish/basis#readme",
   "bugs": {

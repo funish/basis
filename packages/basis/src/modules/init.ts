@@ -44,8 +44,8 @@ export async function initProject(
       },
       staged: {
         rules: {
-          "*.{ts,tsx,js,jsx}": "basis lint --fix",
-          "*.{json,md,yml,yaml}": "basis fmt --write",
+          "**/*.{ts,tsx,js,jsx}": "basis lint",
+          "**/*.{json,md,yml,yaml}": "basis fmt",
         },
       },
     },

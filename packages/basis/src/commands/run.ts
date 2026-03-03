@@ -2,6 +2,8 @@ import { defineCommand, type CommandDef, type ArgsDef } from "citty";
 import { consola } from "consola";
 import { runScript } from "nypm";
 import { createJiti } from "jiti";
+import { resolve } from "pathe";
+import { existsSync } from "node:fs";
 import { loadConfig } from "../config";
 
 export const runCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
@@ -22,29 +24,41 @@ export const runCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
     const { config } = await loadConfig();
     const jitiOptions = config.run?.config;
 
-    // Try runScript first (package.json script)
+    // Check if it's a file path first to avoid runScript errors
+    const filePath = resolve(cwd, scriptOrFile);
+    const isFile = existsSync(filePath);
+
+    if (isFile) {
+      // It's a file, run with jiti directly
+      try {
+        const jitiInstance = createJiti(cwd, jitiOptions);
+
+        // Use jiti.esmResolve to resolve the file path
+        const resolved = jitiInstance.esmResolve(filePath);
+
+        // Reconstruct process.argv: [node, scriptPath, ...args]
+        process.argv = [process.argv[0], resolved, ...rawArgs.slice(1)];
+
+        await jitiInstance.import(resolved);
+
+        return;
+      } catch (jitiError) {
+        consola.error("Failed to run file:");
+        consola.error(`  ${String(jitiError)}`);
+        process.exit(1);
+      }
+    }
+
+    // Not a file, try as package.json script
     try {
       await runScript(scriptOrFile, {
         cwd,
         args: scriptArgs,
       });
-      return;
     } catch (error) {
-      // If runScript fails, try jiti (file path)
-      try {
-        const jitiInstance = createJiti(cwd, jitiOptions);
-        await jitiInstance.import(scriptOrFile);
-        return;
-      } catch (jitiError) {
-        // Both failed, report error
-        consola.error("Run failed:");
-        consola.error(`  runScript error: ${String(error)}`);
-        consola.error(`  jiti error: ${String(jitiError)}`);
-        consola.info(
-          `\nTried to run "${scriptOrFile}" as both a package.json script and a file, but both failed.`,
-        );
-        process.exit(1);
-      }
+      consola.error(`Failed to run script "${scriptOrFile}":`);
+      consola.error(`  ${String(error)}`);
+      process.exit(1);
     }
   },
 });

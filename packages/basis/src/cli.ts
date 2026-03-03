@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import { defineCommand, runMain } from "citty";
-import { consola } from "consola";
 import { readPackageJSON } from "pkg-types";
 
 import { initCommand } from "./commands/init";
@@ -43,7 +42,4 @@ const main = defineCommand({
   },
 });
 
-runMain(main).catch((error) => {
-  consola.error(error);
-  process.exit(1);
-});
+void runMain(main);

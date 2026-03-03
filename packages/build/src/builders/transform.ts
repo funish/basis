@@ -18,7 +18,7 @@ import { makeExecutable, SHEBANG_RE } from "./plugins/shebang";
 export async function transformDir(ctx: BuildContext, entry: TransformEntry): Promise<void> {
   const promises: Promise<string>[] = [];
 
-  for  (const entryName of await glob("**/*.*", { cwd: entry.input })) {
+  for (const entryName of await glob("**/*.*", { cwd: entry.input })) {
     if (entry.filter && (await entry.filter(entryName)) === false) {
       continue;
     }

@@ -1,11 +1,46 @@
-import { readFile, writeFile, stat } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { execSync } from "node:child_process";
-import { exec } from "dugite";
+import { exec, setupEnvironment } from "dugite";
 import { consola } from "consola";
 import picomatch from "picomatch";
 import { resolve } from "pathe";
 import type { StagedConfig } from "../types";
 import { loadConfig } from "../config";
+
+/**
+ * Setup Git environment using dugite's setupEnvironment
+ * This ensures dugite can find the system Git or use embedded Git correctly
+ */
+export async function setupGitEnvironment() {
+  try {
+    // Try to find system Git installation directory
+    // On Windows with Git for Windows, it's typically at C:/Program Files/Git
+    // We can use git --exec-path to find it
+    const gitExecPath = execSync("git --exec-path", { encoding: "utf8" }).trim();
+
+    if (gitExecPath) {
+      // git --exec-path returns something like C:/Program Files/Git/mingw64/libexec/git-core
+      // We need to go up 3 levels to get the Git installation directory
+      const gitDir = resolve(gitExecPath, "..", "..", "..");
+
+      // Use dugite's setupEnvironment to configure the environment
+      const result = setupEnvironment({
+        LOCAL_GIT_DIRECTORY: gitDir,
+      });
+
+      // Update process.env with the configured environment
+      Object.assign(process.env, result.env);
+
+      consola.debug(`Using system Git from: ${result.gitLocation}`);
+    }
+  } catch {
+    // System Git not found, dugite will use embedded Git
+    consola.debug("System Git not found, dugite will use embedded Git");
+  }
+}
+
+// Initialize Git environment on module load
+void setupGitEnvironment();
 
 /**
  * Get staged files (only existing files, not deleted ones)
@@ -55,16 +90,35 @@ export async function lintStagedFiles(cwd = process.cwd()): Promise<boolean> {
   for (const [pattern, command] of Object.entries(rules)) {
     // Match files against pattern
     const isMatch = picomatch(pattern);
-    const matchedFiles = files.filter(
-      (file) =>
-        !processedFiles.has(file) && isMatch(file),
-    );
+    const matchedFiles = files.filter((file) => !processedFiles.has(file) && isMatch(file));
 
     if (matchedFiles.length === 0) continue;
 
     consola.info(`Running ${command} for ${matchedFiles.length} file(s) matching ${pattern}`);
 
     try {
+      // Get working directory status before format
+      const beforeStatus = await exec(["status", "--porcelain"], cwd);
+      const beforeModified = new Set<string>();
+
+      beforeStatus.stdout
+        .trim()
+        .split("\n")
+        .filter(Boolean)
+        .forEach((line) => {
+          // Git status --porcelain format: "XY filename" where XY are 2-char status code
+          // X can be space for untracked files, so we match any 2 chars (space or non-space)
+          const match = line.match(/^(..)\s+(.+)$/);
+          if (!match) return;
+
+          const [, status, filePath] = match;
+
+          // Record files that were already modified in working directory (2nd char is M)
+          if (status[1] === "M" || status === " M") {
+            beforeModified.add(filePath);
+          }
+        });
+
       // Parse command (e.g., "oxlint --fix" -> ["oxlint", "--fix"])
       const [cmd, ...cmdArgs] = command.split(" ");
 
@@ -74,19 +128,39 @@ export async function lintStagedFiles(cwd = process.cwd()): Promise<boolean> {
         stdio: "inherit",
       });
 
-      // Re-stage the linted files after potential modifications
-      const existingFiles: string[] = [];
-      for (const file of matchedFiles) {
-        try {
-          await stat(resolve(cwd, file));
-          existingFiles.push(file);
-        } catch {
-          // File doesn't exist, skip
-        }
-      }
+      // Check for newly modified files after format (including indirectly modified ones)
+      const afterStatus = await exec(["status", "--porcelain"], cwd);
+      const filesToStage = new Set<string>();
 
-      if (existingFiles.length > 0) {
-        await exec(["add", ...existingFiles], cwd);
+      afterStatus.stdout
+        .trim()
+        .split("\n")
+        .filter(Boolean)
+        .forEach((line) => {
+          // Git status --porcelain format: "XY filename" where XY are 2-char status code
+          // X can be space for untracked files, so we match any 2 chars (space or non-space)
+          const match = line.match(/^(..)\s+(.+)$/);
+          if (!match) return;
+
+          const [, status, filePath] = match;
+
+          // Check if working directory file is modified (2nd char is M)
+          if (status[1] === "M" || status === " M") {
+            // If it's a matched file (was staged), always re-stage it
+            if (matchedFiles.includes(filePath)) {
+              filesToStage.add(filePath);
+            }
+            // If it's NOT a matched file, only stage if it's newly modified (by format tool)
+            else if (!beforeModified.has(filePath)) {
+              filesToStage.add(filePath);
+            }
+          }
+        });
+
+      // Re-stage files
+      if (filesToStage.size > 0) {
+        await exec(["add", ...Array.from(filesToStage)], cwd);
+        consola.info(`Re-staged ${filesToStage.size} file(s) after formatting`);
       }
 
       matchedFiles.forEach((file) => processedFiles.add(file));

@@ -58,9 +58,7 @@ export async function rolldownBuild(
   const rolldownConfig = defu(entry.rolldown, {
     cwd: ctx.pkgDir,
     input: inputs,
-    plugins: [
-      shebangPlugin(),
-    ] as Plugin[],
+    plugins: [shebangPlugin()] as Plugin[],
     platform: "node",
     onLog(level, log, defaultHandler) {
       // Suppress EVAL warns

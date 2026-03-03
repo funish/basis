@@ -137,6 +137,7 @@ Generate lightweight development stubs with Jiti:
 ```
 
 This creates files like:
+
 ```javascript
 import { createJiti } from "jiti";
 

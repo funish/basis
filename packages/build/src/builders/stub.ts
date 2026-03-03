@@ -1,10 +1,7 @@
 import { writeFile, mkdir } from "node:fs/promises";
 import { promises as fsp } from "node:fs";
 import { resolve, dirname, extname, relative, join, basename } from "pathe";
-import {
-  resolveModuleExportNames,
-  fileURLToPath,
-} from "mlly";
+import { resolveModuleExportNames, fileURLToPath } from "mlly";
 import { createJiti } from "jiti";
 import { consola } from "consola";
 import { colors as c } from "consola/utils";
@@ -26,16 +23,20 @@ function resolveAliases(ctx: BuildContext): Record<string, string> {
   const pkg = ctx.pkg;
   if (pkg.exports) {
     for (const [key, value] of Object.entries(pkg.exports)) {
-      if (key.startsWith("./") && value && typeof value === "object" && "import" in value && value.import) {
+      if (
+        key.startsWith("./") &&
+        value &&
+        typeof value === "object" &&
+        "import" in value &&
+        value.import
+      ) {
         // Get the export path (e.g., "./dist/config.mjs" or "dist/config.mjs")
         const exportPath = (value.import as string).replace(/^\.\//, "");
 
         // Convert dist path to source path
         // e.g., "dist/config.mjs" → "src/config"
         // e.g., "dist/commands/*.mjs" → "src/commands/*"
-        const sourcePath = exportPath
-          .replace(/^dist\//, "src/")
-          .replace(/\.m?js$/, "");
+        const sourcePath = exportPath.replace(/^dist\//, "src/").replace(/\.m?js$/, "");
 
         // Create absolute path to source directory
         aliases[key] = resolve(ctx.pkgDir, sourcePath);
@@ -91,8 +92,7 @@ export async function createJitiStub(
     },
   });
 
-  const babelPlugins = options.jiti.transformOptions?.babel
-    ?.plugins;
+  const babelPlugins = options.jiti.transformOptions?.babel?.plugins;
   const importedBabelPlugins: Array<string> = [];
   const serializedJitiOptions = JSON.stringify(
     {
@@ -121,12 +121,7 @@ export async function createJitiStub(
                 const [name, ...args] = plugin;
                 importedBabelPlugins.push(name);
                 return (
-                  `[` +
-                  [
-                    `plugin${i}`,
-                    ...args.map((val) => JSON.stringify(val)),
-                  ].join(", ") +
-                  "]"
+                  `[` + [`plugin${i}`, ...args.map((val) => JSON.stringify(val))].join(", ") + "]"
                 );
               } else {
                 importedBabelPlugins.push(plugin);
@@ -141,11 +136,7 @@ export async function createJitiStub(
   const inputs = await normalizeBundleInputs(entry.input, ctx);
 
   for (const [distName, srcPath] of Object.entries(inputs)) {
-    const output = resolve(
-      ctx.pkgDir,
-      entry.outDir || "dist",
-      `${distName}.mjs`,
-    );
+    const output = resolve(ctx.pkgDir, entry.outDir || "dist", `${distName}.mjs`);
 
     const isESM = ctx.pkg.type === "module";
     const resolvedEntry = fileURLToPath(jiti.esmResolve(srcPath)!);
@@ -165,17 +156,13 @@ export async function createJitiStub(
 
     // MJS Stub
     // Try to analyze exports
-    const namedExports: string[] = await resolveModuleExportNames(
-      resolvedEntry,
-      {
-        extensions: DEFAULT_EXTENSIONS,
-      },
-    ).catch((error) => {
+    const namedExports: string[] = await resolveModuleExportNames(resolvedEntry, {
+      extensions: DEFAULT_EXTENSIONS,
+    }).catch((error) => {
       consola.warn(`Cannot analyze ${resolvedEntry} for exports:`, error.message);
       return [];
     });
-    const hasDefaultExport =
-      namedExports.includes("default") || namedExports.length === 0;
+    const hasDefaultExport = namedExports.includes("default") || namedExports.length === 0;
 
     const jitiESMPath = "jiti";
 
@@ -190,15 +177,9 @@ export async function createJitiStub(
           "",
           `const jiti = createJiti(import.meta.url, ${serializedJitiOptions})`,
           "",
-          `/** @type {import(${JSON.stringify(
-            resolvedEntryForTypeImport,
-          )})} */`,
-          `const _module = await jiti.import(${JSON.stringify(
-            resolvedEntry,
-          )});`,
-          hasDefaultExport
-            ? "\nexport default _module?.default ?? _module;"
-            : "",
+          `/** @type {import(${JSON.stringify(resolvedEntryForTypeImport)})} */`,
+          `const _module = await jiti.import(${JSON.stringify(resolvedEntry)});`,
+          hasDefaultExport ? "\nexport default _module?.default ?? _module;" : "",
           ...namedExports
             .filter((name) => name !== "default")
             .map((name) => `export const ${name} = _module.${name};`),
