@@ -1,4 +1,3 @@
-import { builtinModules } from "node:module";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, relative, join, basename, extname, resolve } from "pathe";
 import { consola } from "consola";
@@ -10,6 +9,7 @@ import { resolveModulePath } from "exsolve";
 import prettyBytes from "pretty-bytes";
 import { distSize, fmtPath, sideEffectSize } from "../utils";
 import { makeExecutable, shebangPlugin } from "./plugins/shebang";
+import { externals } from "nf3/plugin";
 import { defu } from "defu";
 
 import type { OutputChunk, Plugin, InputOptions, OutputOptions } from "rolldown";
@@ -55,10 +55,23 @@ export async function rolldownBuild(
     return;
   }
 
+  const dependencyPatterns = [
+    ...Object.keys(ctx.pkg.dependencies || {}),
+    ...Object.keys(ctx.pkg.peerDependencies || {}),
+  ].map((p) => new RegExp(`^${p}`));
+
   const rolldownConfig = defu(entry.rolldown, {
     cwd: ctx.pkgDir,
     input: inputs,
-    plugins: [shebangPlugin()] as Plugin[],
+    plugins: [
+      shebangPlugin(),
+      externals({
+        rootDir: ctx.pkgDir,
+        conditions: ["node", "import", "default"],
+        include: dependencyPatterns,
+        trace: false,
+      }),
+    ] as Plugin[],
     platform: "node",
     onLog(level, log, defaultHandler) {
       // Suppress EVAL warns
@@ -71,14 +84,6 @@ export async function rolldownBuild(
       // Same as rolldown default for node platform but prefer "module" field over "main"
       mainFields: ["module", "main"],
     },
-    external: [
-      ...builtinModules,
-      ...builtinModules.map((m) => `node:${m}`),
-      ...[
-        ...Object.keys(ctx.pkg.dependencies || {}),
-        ...Object.keys(ctx.pkg.peerDependencies || {}),
-      ].flatMap((p) => [p, new RegExp(`^${p}/`)]),
-    ],
     treeshake: {
       moduleSideEffects: "no-external",
     },
@@ -140,10 +145,6 @@ export async function rolldownBuild(
     deps = new Set<string>();
     depsCache.set(chunk, deps);
     for (const id of chunk.imports) {
-      if (builtinModules.includes(id) || id.startsWith("node:")) {
-        deps.add(`[Node.js]`);
-        continue;
-      }
       const depChunk = output.find((o) => o.type === "chunk" && o.fileName === id) as
         | OutputChunk
         | undefined;
