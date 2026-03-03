@@ -1,6 +1,6 @@
 {
   "name": "@funish/basis",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "A modern development toolkit with unified CLI for package management, versioning, publishing, code quality, and Git workflow automation.",
   "keywords": [
     "basis",
@@ -74,6 +74,8 @@
     "dugite": "3.2.0",
     "jiti": "2.6.1",
     "nypm": "0.6.5",
+    "oxfmt": "0.36.0",
+    "oxlint": "1.51.0",
     "pathe": "2.0.3",
     "picomatch": "4.0.3",
     "pkg-types": "2.3.0",
@@ -82,8 +84,7 @@
   },
   "devDependencies": {
     "@types/picomatch": "4.0.2",
-    "@types/semver": "7.7.1",
-    "oxlint-tsgolint": "0.15.0"
+    "@types/semver": "7.7.1"
   },
   "peerDependencies": {
     "oxlint-tsgolint": "0.15.0"

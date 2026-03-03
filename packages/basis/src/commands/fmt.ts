@@ -1,7 +1,7 @@
 import { defineCommand, type CommandDef, type ArgsDef } from "citty";
 import { consola } from "consola";
-import { dlx } from "nypm";
 import { loadConfig } from "../config";
+import { runTool } from "../modules/run";
 
 export const fmtCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
   meta: {
@@ -9,25 +9,23 @@ export const fmtCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
     description: "Format code",
   },
   async run({ rawArgs }) {
-    const cwd = process.cwd();
-
     // Load config (will automatically search upward)
     const { config } = await loadConfig();
     const configArgs = (config.fmt?.config as string[]) || [];
 
-    // Combine config args with user args (config first, then user args to allow override)
-    const args = [...configArgs, ...rawArgs];
+    // Use rawArgs if provided, otherwise use config args
+    const args = rawArgs.length > 0 ? rawArgs : configArgs;
 
-    try {
-      await dlx("oxfmt", {
-        args,
-        cwd,
-      });
+    const result = runTool({
+      pkg: "oxfmt",
+      bin: "cli.js",
+      args,
+    });
 
-      consola.success("Formatting completed");
-    } catch (error) {
-      consola.error("Formatting failed:", error);
+    if (result.status !== 0) {
       process.exit(1);
     }
+
+    consola.success("Formatting completed");
   },
 });

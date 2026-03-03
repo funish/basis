@@ -10,6 +10,9 @@ import type { JitiOptions } from "jiti";
 // ===============================================
 
 export interface BasisConfig {
+  /** Extend from another config file or package */
+  extends?: string | string[];
+
   // Command configurations (aligned with CLI commands)
   lint?: LintConfig;
   fmt?: FmtConfig;

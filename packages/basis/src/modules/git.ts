@@ -119,11 +119,8 @@ export async function lintStagedFiles(cwd = process.cwd()): Promise<boolean> {
           }
         });
 
-      // Parse command (e.g., "oxlint --fix" -> ["oxlint", "--fix"])
-      const [cmd, ...cmdArgs] = command.split(" ");
-
       // Execute the external command
-      execSync(`${cmd} ${cmdArgs.join(" ")}`, {
+      execSync(command, {
         cwd,
         stdio: "inherit",
       });

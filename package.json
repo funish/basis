@@ -42,14 +42,12 @@
     "build": "pnpm -r build",
     "lint": "basis lint",
     "fmt": "basis fmt",
-    "check": "basis check",
     "postinstall": "pnpm dev && basis git setup"
   },
   "devDependencies": {
     "@funish/basis": "workspace:*",
     "@funish/build": "workspace:*",
     "@types/node": "24.8.1",
-    "obuild": "0.4.31",
     "oxlint-tsgolint": "0.15.0"
   },
   "packageManager": "pnpm@10.30.3+sha512.c961d1e0a2d8e354ecaa5166b822516668b7f44cb5bd95122d590dd81922f606f5473b6d23ec4a5be05e7fcd18e8488d47d978bbe981872f1145d06e9a740017"

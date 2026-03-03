@@ -6,7 +6,6 @@ import { readPackageJSON } from "pkg-types";
 import { initCommand } from "./commands/init";
 import { lintCommand } from "./commands/lint";
 import { fmtCommand } from "./commands/fmt";
-import { checkCommand } from "./commands/check";
 import { buildCommand } from "./commands/build";
 import { gitCommand } from "./commands/git";
 import { runCommand } from "./commands/run";
@@ -29,7 +28,6 @@ const main = defineCommand({
     init: initCommand,
     lint: lintCommand,
     fmt: fmtCommand,
-    check: checkCommand,
     build: buildCommand,
     git: gitCommand,
     run: runCommand,
