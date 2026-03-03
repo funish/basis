@@ -90,7 +90,7 @@ export async function rolldownBuild(
   } satisfies InputOptions);
 
   if (entry.dts !== false) {
-    rolldownConfig.plugins.push(...dts({ ...(entry.dts as DtsOptions) }));
+    rolldownConfig.plugins.push(...dts(defu(entry.dts, { eager: true } as DtsOptions)));
   }
 
   await hooks.rolldownConfig?.(rolldownConfig, ctx);

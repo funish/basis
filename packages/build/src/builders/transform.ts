@@ -11,6 +11,7 @@ import { fmtPath } from "../utils";
 import { glob } from "tinyglobby";
 import { minifySync, transformSync, parseSync } from "rolldown/utils";
 import { makeExecutable, SHEBANG_RE } from "./plugins/shebang";
+import { defu } from "defu";
 
 /**
  * Transform all .ts modules in a directory using oxc-transform.
@@ -207,13 +208,12 @@ async function transformModule(entryPath: string, entry: TransformEntry, entryDi
   }
 
   const transformed = transformSync(entryPath, sourceText, {
-    ...entry.oxc,
-    ...sourceOptions,
+    ...defu(entry.oxc, sourceOptions),
     cwd: dirname(entryPath),
-    typescript: {
-      declaration: emitDeclaration ? { stripInternal: true } : undefined,
-      ...entry.oxc?.typescript,
-    },
+    typescript: defu(
+      entry.oxc?.typescript || {},
+      emitDeclaration ? { declaration: { stripInternal: true } } : {},
+    ),
   });
 
   if (transformed.warnings.length > 0) {

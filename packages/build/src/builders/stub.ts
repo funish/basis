@@ -5,6 +5,7 @@ import { resolveModuleExportNames, fileURLToPath } from "mlly";
 import { createJiti } from "jiti";
 import { consola } from "consola";
 import { colors as c } from "consola/utils";
+import { defu } from "defu";
 import { makeExecutable } from "./plugins/shebang";
 import type { BuildContext, BundleEntry } from "../types";
 
@@ -83,10 +84,7 @@ export async function createJitiStub(
   // Create jiti instance
   const jiti = createJiti(ctx.pkgDir, {
     ...options.jiti,
-    alias: {
-      ...resolveAliases(ctx),
-      ...options.jiti.alias,
-    },
+    alias: defu(resolveAliases(ctx), options.jiti.alias),
     transformOptions: {
       ...options.jiti.transformOptions,
     },
@@ -95,20 +93,15 @@ export async function createJitiStub(
   const babelPlugins = options.jiti.transformOptions?.babel?.plugins;
   const importedBabelPlugins: Array<string> = [];
   const serializedJitiOptions = JSON.stringify(
-    {
-      ...options.jiti,
-      alias: {
-        ...resolveAliases(ctx),
-        ...options.jiti.alias,
-      },
-      transformOptions: {
-        ...options.jiti.transformOptions,
+    defu(options.jiti, {
+      alias: defu(resolveAliases(ctx), options.jiti.alias),
+      transformOptions: defu(options.jiti.transformOptions || {}, {
         babel: {
           ...options.jiti.transformOptions?.babel,
           plugins: "__$BABEL_PLUGINS",
         },
-      },
-    },
+      }),
+    }),
     null,
     2,
   ).replace(

@@ -4,6 +4,7 @@ import { defineCommand, runMain } from "citty";
 import { consola } from "consola";
 import { readPackageJSON } from "pkg-types";
 import { loadConfig } from "c12";
+import { defu } from "defu";
 
 import { build } from "./build";
 import type { BuildConfig, BuildEntry } from "./types";
@@ -55,10 +56,7 @@ const buildCommand = defineCommand({
           } as BuildEntry;
         }
       }
-      return {
-        ...entry,
-        stub: args.stub,
-      } as BuildEntry;
+      return defu(entry, { stub: args.stub }) as BuildEntry;
     });
 
     if (!entries || entries.length === 0) {
