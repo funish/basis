@@ -3,18 +3,18 @@
 import { defineCommand, runMain } from "citty";
 import { readPackageJSON } from "pkg-types";
 
-import { initCommand } from "./commands/init";
-import { lintCommand } from "./commands/lint";
-import { fmtCommand } from "./commands/fmt";
-import { buildCommand } from "./commands/build";
-import { gitCommand } from "./commands/git";
-import { runCommand } from "./commands/run";
-import { versionCommand } from "./commands/version";
-import { publishCommand } from "./commands/publish";
-import { auditCommand } from "./commands/audit";
-import { addCommand } from "./commands/add";
-import { removeCommand } from "./commands/remove";
-import { dlxCommand } from "./commands/dlx";
+import { initCommand } from "../commands/init";
+import { lintCommand } from "../commands/lint";
+import { fmtCommand } from "../commands/fmt";
+import { buildCommand } from "../commands/build";
+import { gitCommand } from "../commands/git";
+import { runCommand } from "../commands/run";
+import { versionCommand } from "../commands/version";
+import { publishCommand } from "../commands/publish";
+import { auditCommand } from "../commands/audit";
+import { addCommand } from "../commands/add";
+import { removeCommand } from "../commands/remove";
+import { dlxCommand } from "../commands/dlx";
 
 const packageJson = await readPackageJSON(import.meta.url);
 

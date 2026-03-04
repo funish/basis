@@ -1,6 +1,6 @@
 {
   "name": "@funish/basis",
-  "version": "0.2.7",
+  "version": "0.2.8-edge.0",
   "description": "A modern development toolkit with unified CLI for package management, versioning, publishing, code quality, and Git workflow automation.",
   "keywords": [
     "basis",
@@ -40,7 +40,9 @@
     "directory": "packages/basis"
   },
   "bin": {
-    "basis": "dist/cli.mjs"
+    "basis": "dist/cli/basis.mjs",
+    "oxfmt": "dist/cli/oxfmt.mjs",
+    "oxlint": "dist/cli/oxlint.mjs"
   },
   "files": [
     "dist"
