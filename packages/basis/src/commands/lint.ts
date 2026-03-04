@@ -1,5 +1,4 @@
 import { defineCommand, type CommandDef, type ArgsDef } from "citty";
-import { consola } from "consola";
 import { loadConfig } from "../config";
 import { runTool } from "../modules/run";
 
@@ -25,7 +24,5 @@ export const lintCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
     if (result.status !== 0) {
       process.exit(1);
     }
-
-    consola.success("Linting completed");
   },
 });

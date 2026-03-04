@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 
-import { runMain } from "citty";
+import { runCommand } from "citty";
 import { lintCommand } from "../commands/lint";
 
-void runMain(lintCommand);
+void runCommand(lintCommand, {
+  rawArgs: process.argv.slice(2),
+  showUsage: false,
+});

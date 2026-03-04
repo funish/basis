@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 
-import { runMain } from "citty";
+import { runCommand } from "citty";
 import { fmtCommand } from "../commands/fmt";
 
-void runMain(fmtCommand);
+void runCommand(fmtCommand, {
+  rawArgs: process.argv.slice(2),
+  showUsage: false,
+});

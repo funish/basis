@@ -58,7 +58,7 @@ export async function rolldownBuild(
   const dependencyPatterns = [
     ...Object.keys(ctx.pkg.dependencies || {}),
     ...Object.keys(ctx.pkg.peerDependencies || {}),
-  ].map((p) => new RegExp(`^${p}`));
+  ].flatMap((p) => [p, new RegExp(`^${p}$`), new RegExp(`^${p}/`)]);
 
   const rolldownConfig = defu(entry.rolldown, {
     cwd: ctx.pkgDir,
@@ -72,13 +72,7 @@ export async function rolldownBuild(
       }),
     ] as Plugin[],
     platform: "node",
-    external: [
-      ...dependencyPatterns,
-      ...[
-        ...Object.keys(ctx.pkg.dependencies || {}),
-        ...Object.keys(ctx.pkg.peerDependencies || {}),
-      ].flatMap((p) => [p, new RegExp(`^${p}/`)]),
-    ],
+    external: dependencyPatterns,
     onLog(level, log, defaultHandler) {
       // Suppress EVAL warns
       if (log.code === "EVAL") {

@@ -4,7 +4,14 @@ export default defineBuildConfig({
   entries: [
     {
       type: "bundle",
-      input: ["src/index", "src/config", "src/cli/basis", "src/cli/oxlint", "src/cli/oxfmt"],
+      input: [
+        "src/index",
+        "src/config",
+        "src/cli/basis",
+        "src/cli/oxlint",
+        "src/cli/oxfmt",
+        "src/cli/tsgolint",
+      ],
       minify: true,
     },
     {
