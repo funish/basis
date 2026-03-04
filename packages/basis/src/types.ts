@@ -262,9 +262,6 @@ export interface VersionOptions {
   /** Create git tag */
   tag?: boolean;
 
-  /** Allow same version */
-  allowSameVersion?: boolean;
-
   /** Skip commit hooks */
   noCommitHooks?: boolean;
 

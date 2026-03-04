@@ -1,6 +1,6 @@
 {
   "name": "@funish/basis",
-  "version": "0.2.9-edge.1",
+  "version": "0.2.9-edge.2",
   "description": "A modern development toolkit with unified CLI for package management, versioning, publishing, code quality, and Git workflow automation.",
   "keywords": [
     "basis",

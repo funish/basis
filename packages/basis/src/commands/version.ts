@@ -48,10 +48,6 @@ export const versionCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
       type: "boolean",
       description: "Bump prerelease version",
     },
-    "allow-same-version": {
-      type: "boolean",
-      description: "Allow same version",
-    },
   },
   async run({ args }) {
     try {
@@ -66,7 +62,6 @@ export const versionCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
         preminor: args.preminor,
         prepatch: args.prepatch,
         prerelease: args.prerelease,
-        allowSameVersion: args["allow-same-version"],
       };
 
       if (args.version) {
@@ -98,12 +93,6 @@ export const versionCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
       }
 
       const newVersion = calculateNewVersion(oldVersion, options, config.version || {});
-
-      if (!options.allowSameVersion && newVersion === oldVersion) {
-        throw new Error(
-          `Version unchanged: ${oldVersion}. Use --allow-same-version to allow this.`,
-        );
-      }
 
       const packageJsonPath = await resolvePackageJSON(cwd);
       await writePackageJSON(packageJsonPath, {

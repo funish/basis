@@ -131,9 +131,6 @@ basis version prepatch     # 1.0.1-alpha.0
 
 # Specific version
 basis version 2.0.0
-
-# Allow same version
-basis version patch --allow-same-version
 ```
 
 ### Publishing
