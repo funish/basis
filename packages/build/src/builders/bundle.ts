@@ -68,11 +68,17 @@ export async function rolldownBuild(
       externals({
         rootDir: ctx.pkgDir,
         conditions: ["node", "import", "default"],
-        include: dependencyPatterns,
         trace: false,
       }),
     ] as Plugin[],
     platform: "node",
+    external: [
+      ...dependencyPatterns,
+      ...[
+        ...Object.keys(ctx.pkg.dependencies || {}),
+        ...Object.keys(ctx.pkg.peerDependencies || {}),
+      ].flatMap((p) => [p, new RegExp(`^${p}/`)]),
+    ],
     onLog(level, log, defaultHandler) {
       // Suppress EVAL warns
       if (log.code === "EVAL") {
