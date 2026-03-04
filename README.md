@@ -10,7 +10,7 @@
 ## Packages
 
 - **[@funish/basis](./packages/basis/README.md)** - Unified CLI toolkit for development workflows: package management, versioning, publishing, code quality, and Git automation
-- **[@funish/build](./packages/build/README.md)** - Modern build system powered by Rolldown with Jiti stub support and Oxc transformation
+- **[@funish/build](./packages/build/README.md)** - Modern build system powered by tsdown (Rolldown + Oxc) with Jiti stub support
 
 ## Quick Start
 

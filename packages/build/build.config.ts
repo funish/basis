@@ -3,8 +3,7 @@ import { defineBuildConfig } from "./src/config";
 export default defineBuildConfig({
   entries: [
     {
-      type: "bundle",
-      input: ["src/index", "src/cli", "src/config"],
+      entry: ["src/index", "src/config", "src/command", "src/cli"],
       minify: true,
     },
   ],

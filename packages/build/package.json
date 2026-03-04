@@ -1,7 +1,7 @@
 {
   "name": "@funish/build",
-  "version": "0.0.4",
-  "description": "Modern build system powered by Rolldown with Jiti stub support and Oxc transformation",
+  "version": "0.1.0-edge.0",
+  "description": "Modern build system powered by tsdown (Rolldown + Oxc) with Jiti stub support",
   "keywords": [
     "build",
     "bundling",
@@ -11,7 +11,7 @@
     "oxc",
     "rolldown",
     "stub",
-    "transform",
+    "tsdown",
     "typescript",
     "zero-config"
   ],
@@ -46,6 +46,10 @@
     "./config": {
       "types": "./dist/config.d.mts",
       "import": "./dist/config.mjs"
+    },
+    "./command": {
+      "types": "./dist/command.d.mts",
+      "import": "./dist/command.mjs"
     }
   },
   "scripts": {
@@ -58,19 +62,12 @@
     "citty": "0.2.1",
     "consola": "3.4.2",
     "defu": "6.1.4",
-    "exsolve": "1.0.8",
     "jiti": "2.6.1",
-    "magic-string": "0.30.21",
     "mlly": "1.8.0",
-    "nf3": "0.3.10",
     "pathe": "2.0.3",
     "pkg-types": "1.3.1",
     "pretty-bytes": "7.1.0",
-    "rolldown": "1.0.0-rc.6",
-    "rolldown-plugin-dts": "0.22.2",
-    "tinyglobby": "0.2.15"
-  },
-  "devDependencies": {
-    "typescript": "5.9.3"
+    "tinyglobby": "0.2.15",
+    "tsdown": "0.20.3"
   }
 }

@@ -5,7 +5,7 @@ import { consola } from "consola";
 import picomatch from "picomatch";
 import { resolve } from "pathe";
 import type { StagedConfig } from "../types";
-import { loadConfig } from "../config";
+import { loadConfig } from "../utils";
 
 /**
  * Setup Git environment using dugite's setupEnvironment

@@ -8,28 +8,19 @@ export const removeCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
     description: "Remove dependencies",
   },
   async run({ rawArgs }) {
-    if (rawArgs.length === 0) {
-      consola.error("Please specify at least one package name");
+    const packages = rawArgs.filter((arg) => !arg.startsWith("-"));
+
+    if (packages.length === 0) {
+      consola.error("Package name required");
       consola.info("Example: basis remove lodash");
       process.exit(1);
     }
 
-    // Filter out flags from rawArgs to get package names
-    const packages = rawArgs.filter((arg) => !arg.startsWith("-"));
-
-    if (packages.length === 0) {
-      consola.error("Please specify at least one package name");
-      process.exit(1);
-    }
-
     try {
-      await removeDependency(packages, {
-        cwd: process.cwd(),
-      });
-
+      await removeDependency(packages, { cwd: process.cwd() });
       consola.success(`Removed ${packages.join(", ")}`);
     } catch (error) {
-      consola.error("Remove packages failed:", error);
+      consola.error("Failed to remove packages:", error);
       process.exit(1);
     }
   },

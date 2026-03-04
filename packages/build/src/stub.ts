@@ -1,4 +1,4 @@
-import { writeFile, mkdir } from "node:fs/promises";
+import { writeFile, mkdir, chmod } from "node:fs/promises";
 import { promises as fsp } from "node:fs";
 import { resolve, dirname, extname, relative, join, basename } from "pathe";
 import { resolveModuleExportNames, fileURLToPath } from "mlly";
@@ -6,21 +6,27 @@ import { createJiti } from "jiti";
 import { consola } from "consola";
 import { colors as c } from "consola/utils";
 import { defu } from "defu";
-import { makeExecutable } from "./plugins/shebang";
-import type { BuildContext, BundleEntry } from "../types";
+import type { BuildContext, BuildEntry } from "./types";
+import { fmtPath } from "./utils";
 
-const DEFAULT_EXTENSIONS = [".js", ".mjs", ".cjs", ".ts", ".mts", ".cts"];
+export const DEFAULT_EXTENSIONS = [".js", ".mjs", ".cjs", ".ts", ".mts", ".cts"];
 
-function resolveAliases(ctx: BuildContext): Record<string, string> {
+export async function makeExecutable(filePath: string): Promise<void> {
+  await chmod(filePath, 0o755);
+}
+
+export function getShebang(code: string): string {
+  const match = code.match(/^#![^\n]*/);
+  return match ? match[0] : "";
+}
+
+export function resolveAliases(ctx: BuildContext): Record<string, string> {
   const aliases: Record<string, string> = {};
 
-  // Map package name to root directory (absolute path)
   if (ctx.pkg.name) {
     aliases[ctx.pkg.name] = ctx.pkgDir;
   }
 
-  // Add common aliases based on package exports
-  // Convert relative paths to absolute paths pointing to source directory
   const pkg = ctx.pkg;
   if (pkg.exports) {
     for (const [key, value] of Object.entries(pkg.exports)) {
@@ -31,26 +37,14 @@ function resolveAliases(ctx: BuildContext): Record<string, string> {
         "import" in value &&
         value.import
       ) {
-        // Get the export path (e.g., "./dist/config.mjs" or "dist/config.mjs")
         const exportPath = (value.import as string).replace(/^\.\//, "");
-
-        // Convert dist path to source path
-        // e.g., "dist/config.mjs" → "src/config"
-        // e.g., "dist/commands/*.mjs" → "src/commands/*"
         const sourcePath = exportPath.replace(/^dist\//, "src/").replace(/\.m?js$/, "");
-
-        // Create absolute path to source directory
         aliases[key] = resolve(ctx.pkgDir, sourcePath);
       }
     }
   }
 
   return aliases;
-}
-
-function getShebang(code: string): string {
-  const match = code.match(/^#![^\n]*/);
-  return match ? match[0] : "";
 }
 
 export interface StubOptions {
@@ -62,12 +56,11 @@ export interface StubOptions {
     };
     alias?: Record<string, string>;
   };
-  absoluteJitiPath?: boolean;
 }
 
 export async function createJitiStub(
   ctx: BuildContext,
-  entry: BundleEntry,
+  entry: BuildEntry & { stub: true },
   stubOptions?: StubOptions,
 ): Promise<void> {
   const options = stubOptions || {
@@ -126,7 +119,15 @@ export async function createJitiStub(
       : "[]",
   );
 
-  const inputs = await normalizeBundleInputs(entry.input, ctx);
+  const inputs = await normalizeBundleInputs(
+    (typeof entry.entry === "string"
+      ? entry.entry
+      : Array.isArray(entry.entry)
+        ? entry.entry
+        : Object.values(entry.entry || {})) as string | string[],
+    ctx,
+    entry.outDir,
+  );
 
   for (const [distName, srcPath] of Object.entries(inputs)) {
     const output = resolve(ctx.pkgDir, entry.outDir || "dist", `${distName}.mjs`);
@@ -145,14 +146,17 @@ export async function createJitiStub(
 
     await mkdir(dirname(output), { recursive: true });
 
-    consola.log(`${c.magenta("[stub] ")} ${c.underline(output)} ${c.dim("(jiti)")}`);
+    consola.info(`${c.magenta("[stub]")} ${fmtPath(output)}`);
 
     // MJS Stub
     // Try to analyze exports
     const namedExports: string[] = await resolveModuleExportNames(resolvedEntry, {
       extensions: DEFAULT_EXTENSIONS,
     }).catch((error) => {
-      consola.warn(`Cannot analyze ${resolvedEntry} for exports:`, error.message);
+      consola.warn(
+        `${c.magenta("[stub]")} Cannot analyze exports for ${resolvedEntry}:`,
+        error.message,
+      );
       return [];
     });
     const hasDefaultExport = namedExports.includes("default") || namedExports.length === 0;
@@ -194,22 +198,45 @@ export async function createJitiStub(
   }
 }
 
-async function normalizeBundleInputs(
+export async function normalizeBundleInputs(
   input: string | string[],
   ctx: BuildContext,
+  outDir?: string,
 ): Promise<Record<string, string>> {
   const inputs: Record<string, string> = {};
 
   for (let src of Array.isArray(input) ? input : [input]) {
-    // Input is already an absolute path, just use it directly
-    const resolved = src;
+    // Resolve relative path to absolute path
+    const resolved = resolve(ctx.pkgDir, src);
 
-    let relativeSrc = relative(join(ctx.pkgDir, "src"), resolved);
-    if (relativeSrc.startsWith("..")) {
-      relativeSrc = relative(join(ctx.pkgDir), resolved);
+    // Calculate relative path for dist naming
+    let relativeSrc: string;
+    if (resolved.startsWith(ctx.pkgDir)) {
+      // Input is absolute path from pkgDir
+      relativeSrc = relative(ctx.pkgDir, resolved);
+    } else {
+      // Input is relative path, calculate relative to src/
+      relativeSrc = relative(join(ctx.pkgDir, "src"), resolved);
+      if (relativeSrc.startsWith("..")) {
+        relativeSrc = relative(join(ctx.pkgDir), resolved);
+      }
     }
+
     if (relativeSrc.startsWith("..")) {
       throw new Error(`Source should be within the package directory (${ctx.pkgDir}): ${src}`);
+    }
+
+    // Remove src/ prefix if present (for glob-expanded files)
+    if (relativeSrc.startsWith("src/")) {
+      relativeSrc = relativeSrc.slice(4);
+    }
+
+    // If outDir already contains the subdirectory (e.g., dist/commands/), keep only filename
+    if (outDir && outDir !== "dist") {
+      const outDirBasename = basename(outDir);
+      if (relativeSrc.startsWith(`${outDirBasename}/`)) {
+        relativeSrc = relativeSrc.slice(outDirBasename.length + 1);
+      }
     }
 
     const distName = join(dirname(relativeSrc), basename(relativeSrc, extname(relativeSrc)));

@@ -76,7 +76,7 @@ basis fmt
 
 # Build project
 basis build                    # Build with default config
-basis build --dir ./packages   # Build specific directory
+basis build --cwd ./packages   # Build specific directory
 basis build --stub             # Generate stub files
 
 # Audit code quality
@@ -167,96 +167,27 @@ basis git branch -a
 
 ## Configuration
 
-Basis uses a single configuration file for all features:
-
 ```ts
 // basis.config.ts
 import { defineBasisConfig } from "@funish/basis/config";
 
 export default defineBasisConfig({
-  // Linting configuration (oxlint arguments)
-  lint: {
-    config: ["--fix", "--fix-suggestions", "--type-aware", "--type-check"],
-  },
-
-  // Formatting configuration (oxfmt arguments)
-  fmt: {
-    config: ["--write", "."],
-  },
-
-  // Git configuration
   git: {
-    // Git hooks
     hooks: {
       "pre-commit": "basis git staged",
       "commit-msg": "basis git lint-commit",
     },
-
-    // Staged files check (lint-staged style)
     staged: {
       rules: {
         "*.{ts,tsx,js,jsx}": "basis lint --fix",
         "*.{json,md,yml,yaml}": "basis fmt --write",
       },
     },
-
-    // Commit message validation
-    commitMsg: {
-      types: ["feat", "fix", "docs", "style", "refactor", "perf", "test", "build", "ci", "chore"],
-      maxLength: 72,
-      minLength: 10,
-    },
   },
-
-  // Run configuration (jiti)
-  run: {},
-
-  // Audit configuration
   audit: {
     dependencies: {
       outdated: true,
       security: true,
-      licenses: {
-        allowed: ["MIT", "Apache-2.0", "BSD-3-Clause"],
-        blocked: ["GPL"],
-      },
-      blocked: ["bad-package"],
-    },
-    structure: {
-      required: ["README.md", "LICENSE"],
-      files: [
-        {
-          pattern: "src/**/*.ts",
-          rule: "^[a-z][a-z0-9-]*\\.ts$",
-          message: "Files should use kebab-case",
-        },
-      ],
-      dirs: [
-        {
-          pattern: "src/*/",
-          rule: "^[a-z][a-z0-9-]*$",
-          message: "Directories should use kebab-case",
-        },
-      ],
-    },
-  },
-
-  // Version configuration
-  version: {
-    preid: "edge",
-  },
-
-  // Publishing configuration
-  publish: {
-    npm: {
-      tag: "latest",
-      additionalTag: "edge",
-    },
-    git: {
-      tagPrefix: "v",
-      message: (version) => `chore: release v${version}`,
-      push: true,
-      signTag: false,
     },
   },
 });

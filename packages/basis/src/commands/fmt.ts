@@ -1,5 +1,5 @@
 import { defineCommand, type CommandDef, type ArgsDef } from "citty";
-import { loadConfig } from "../config";
+import { loadConfig } from "../utils";
 import { runTool } from "../modules/run";
 
 export const fmtCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({

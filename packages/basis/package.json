@@ -1,6 +1,6 @@
 {
   "name": "@funish/basis",
-  "version": "0.2.8",
+  "version": "0.2.9-edge.0",
   "description": "A modern development toolkit with unified CLI for package management, versioning, publishing, code quality, and Git workflow automation.",
   "keywords": [
     "basis",
@@ -59,6 +59,10 @@
     "./config": {
       "types": "./dist/config.d.mts",
       "import": "./dist/config.mjs"
+    },
+    "./cli/*": {
+      "types": "./dist/cli/*.d.mts",
+      "import": "./dist/cli/*.mjs"
     },
     "./commands/*": {
       "types": "./dist/commands/*.d.mts",

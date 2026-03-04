@@ -1,7 +1,7 @@
 import { defineCommand, type CommandDef, type ArgsDef } from "citty";
 import { consola } from "consola";
 import { readPackageJSON } from "pkg-types";
-import { loadConfig } from "../config";
+import { loadConfig } from "../utils";
 import { publishToNpm, publishGitOperations } from "../modules/publish";
 import type { PublishOptions } from "../types";
 

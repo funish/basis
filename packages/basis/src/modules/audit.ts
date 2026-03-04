@@ -6,7 +6,7 @@ import { glob } from "tinyglobby";
 import { readPackageJSON, resolvePackageJSON } from "pkg-types";
 import { resolve } from "pathe";
 import type { AuditConfig } from "../types";
-import { loadConfig } from "../config";
+import { loadConfig } from "../utils";
 
 /**
  * Package manager command configurations
