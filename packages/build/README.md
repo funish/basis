@@ -31,9 +31,14 @@
 ### Installation
 
 ```bash
-# Install as dev dependency
-pnpm add -D @funish/build
-npm install -D @funish/build
+# Install with npm
+$ npm install -D @funish/build
+
+# Install with yarn
+$ yarn add -D @funish/build
+
+# Install with pnpm
+$ pnpm add -D @funish/build
 ```
 
 ### Basic Usage
@@ -57,8 +62,9 @@ import { build } from "@funish/build";
 await build({
   entries: [
     {
-      input: "src/index.ts",
-      outDir: "dist",
+      type: "bundle",
+      input: ["src/index"],
+      minify: true,
     },
   ],
 });
@@ -74,25 +80,20 @@ import { defineBuildConfig } from "@funish/build/config";
 export default defineBuildConfig({
   entries: [
     {
-      input: "src/index.ts",
-      outDir: "dist",
-      // Generate stubs for development
-      stub: true,
+      type: "bundle",
+      input: ["src/index", "src/cli"],
+      minify: true,
     },
     {
-      input: "src/cli.ts",
-      outDir: "dist",
-      // Add rolldown-specific options
-      rolldown: {
-        platform: "node",
-      },
+      type: "transform",
+      input: "src/commands/",
+      outDir: "dist/commands/",
     },
   ],
-
-  // External dependencies (not bundled)
-  external: ["jiti", "consola"],
 });
 ```
+
+> See [src/types.ts](./src/types.ts) for full type definitions.
 
 ## Build Modes
 
@@ -102,12 +103,12 @@ Production-ready bundling with tree-shaking and code splitting:
 
 ```typescript
 {
-  input: "src/index.ts",
-  outDir: "dist",
+  type: "bundle",
+  input: ["src/index", "src/cli"],
+  minify: true,
+  // Pass options to Rolldown
   rolldown: {
     platform: "node",
-    target: "node18",
-    format: "esm",
   },
 }
 ```
@@ -118,9 +119,9 @@ Transform individual files without bundling:
 
 ```typescript
 {
-  input: "src/**/*.ts",
-  outDir: "dist",
-  transform: true,
+  type: "transform",
+  input: "src/commands/",
+  outDir: "dist/commands/",
 }
 ```
 
@@ -130,13 +131,13 @@ Generate lightweight development stubs with Jiti:
 
 ```typescript
 {
-  input: "src/index.ts",
-  outDir: "dist",
+  type: "bundle",
+  input: "src/index",
   stub: true,
 }
 ```
 
-This creates files like:
+This creates lightweight stub files that use Jiti to load the source files at runtime:
 
 ```javascript
 import { createJiti } from "jiti";
@@ -145,24 +146,22 @@ const jiti = createJiti(import.meta.url);
 const _module = await jiti.import("../src/index.ts");
 
 export default _module?.default ?? _module;
-export const { foo, bar } = _module;
+export * from _module;
 ```
 
 ## Advanced Configuration
 
 ### Rolldown Options
 
+Pass any Rolldown options through the `rolldown` field:
+
 ```typescript
 {
-  input: "src/index.ts",
+  type: "bundle",
+  input: "src/index",
   rolldown: {
+    // Any Rolldown options here
     platform: "node",
-    target: "node18",
-    format: "esm",
-    treeshake: {
-      preset: "recommended",
-    },
-    minify: true,
   },
 }
 ```
@@ -204,9 +203,10 @@ await build({
   cwd?: string;
   entries?: BuildEntry[];
   external?: string[];
-  stub?: boolean;
 });
 ```
+
+See [src/types.ts](./src/types.ts) for full type definitions.
 
 ### `defineBuildConfig(config)`
 

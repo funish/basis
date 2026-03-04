@@ -12,14 +12,16 @@
 
 Basis is your **unified development toolkit** for modern projects. Instead of juggling multiple CLI tools, Basis provides a single interface for all your development workflow needs.
 
+**Similar to**: [Vite+](https://viteplus.dev/) - Basis follows the same philosophy of unified tooling with Rust-powered components (oxlint/oxfmt) for maximum performance.
+
 ## Features
 
 - 🎯 **Unified CLI**: One command interface for all development tasks
 - 📦 **Package Management**: Add, remove dependencies with auto-detected package manager (npm, yarn, pnpm, bun, deno)
 - 🏷️ **Version Management**: Semantic versioning with automated git tagging
 - 🚀 **Publishing**: Flexible publishing with tag strategy
-- 🔍 **Code Quality**: Linting, formatting, and type checking
-- 🛠️ **Project Audit**: Dependency and structure validation
+- 🔍 **Code Quality**: Linting, formatting, and building
+- 🛠️ **Project Audit**: Dependency and structure validation with auto-fix
 - 🪪 **Smart Git Hooks**: Automatic git hook management and commit message validation
 - 💻 **Direct TS Execution**: Run TypeScript files directly without compilation
 - 🔧 **Single Configuration**: One config file for all functionality
@@ -29,12 +31,20 @@ Basis is your **unified development toolkit** for modern projects. Instead of ju
 ### Installation
 
 ```bash
-# Install globally (recommended)
-pnpm add -g @funish/basis
-npm install -g @funish/basis
+# Install with npm
+$ npm install -D @funish/basis
+
+# Install with yarn
+$ yarn add -D @funish/basis
+
+# Install with pnpm
+$ pnpm add -D @funish/basis
+
+# Install globally (optional)
+$ pnpm add -g @funish/basis
 
 # Or use directly without installation
-npx @funish/basis init
+$ npx @funish/basis init
 ```
 
 ### Initialize
@@ -42,6 +52,11 @@ npx @funish/basis init
 ```bash
 cd your-project
 basis init
+
+# Options
+basis init --force           # Overwrite existing configuration
+basis init --skip-git-check  # Skip git directory check
+basis init --skip-install    # Skip dependency installation
 
 # This creates:
 # ✅ basis.config.ts with Git hooks
@@ -59,16 +74,16 @@ basis lint
 # Format code
 basis fmt
 
-# Type check
-basis check
-
 # Build project
-basis build
+basis build                    # Build with default config
+basis build --dir ./packages   # Build specific directory
+basis build --stub             # Generate stub files
 
 # Audit code quality
 basis audit                    # Run all audits
 basis audit --dependencies     # Audit dependencies only
 basis audit --structure        # Audit structure only
+basis audit --fix              # Auto-fix issues
 ```
 
 ### Package Management
@@ -109,8 +124,16 @@ basis version major        # 1.0.0 → 2.0.0
 basis version prerelease        # 1.0.0 → 1.0.1-edge.0
 basis version prerelease --preid beta  # 1.0.0 → 1.0.1-beta.0
 
+# Advanced prerelease
+basis version premajor     # 2.0.0-alpha.0
+basis version preminor     # 1.1.0-alpha.0
+basis version prepatch     # 1.0.1-alpha.0
+
 # Specific version
 basis version 2.0.0
+
+# Allow same version
+basis version patch --allow-same-version
 ```
 
 ### Publishing
@@ -136,9 +159,10 @@ basis git staged
 # Validate commit message
 basis git lint-commit
 
-# Git passthrough
+# Git passthrough (all other git commands)
 basis git status
 basis git log --oneline
+basis git branch -a
 ```
 
 ## Configuration
@@ -150,11 +174,15 @@ Basis uses a single configuration file for all features:
 import { defineBasisConfig } from "@funish/basis/config";
 
 export default defineBasisConfig({
-  // Linting configuration (oxlint)
-  lint: {},
+  // Linting configuration (oxlint arguments)
+  lint: {
+    config: ["--fix", "--fix-suggestions", "--type-aware", "--type-check"],
+  },
 
-  // Formatting configuration (oxfmt)
-  fmt: {},
+  // Formatting configuration (oxfmt arguments)
+  fmt: {
+    config: ["--write", "."],
+  },
 
   // Git configuration
   git: {
@@ -220,7 +248,10 @@ export default defineBasisConfig({
 
   // Publishing configuration
   publish: {
-    tag: "latest",
+    npm: {
+      tag: "latest",
+      additionalTag: "edge",
+    },
     git: {
       tagPrefix: "v",
       message: (version) => `chore: release v${version}`,

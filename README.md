@@ -5,6 +5,8 @@
 
 > A modern development toolkit with unified CLI for package management, versioning, publishing, code quality, and Git workflow automation.
 
+**Similar to**: [Vite+](https://viteplus.dev/) - Basis follows the same philosophy of unified tooling with Rust-powered components (oxlint/oxfmt) for maximum performance.
+
 ## Packages
 
 - **[@funish/basis](./packages/basis/README.md)** - Unified CLI toolkit for development workflows: package management, versioning, publishing, code quality, and Git automation
@@ -13,8 +15,17 @@
 ## Quick Start
 
 ```bash
-# Install globally
-pnpm add -g @funish/basis
+# Install with npm
+$ npm install -D @funish/basis
+
+# Install with yarn
+$ yarn add -D @funish/basis
+
+# Install with pnpm
+$ pnpm add -D @funish/basis
+
+# Install globally (optional)
+$ pnpm add -g @funish/basis
 
 # Initialize in your project
 basis init
@@ -31,15 +42,21 @@ basis publish
 import { defineBasisConfig } from "@funish/basis/config";
 
 export default defineBasisConfig({
+  lint: {
+    config: ["--fix", "--fix-suggestions", "--type-aware", "--type-check"],
+  },
+  fmt: {
+    config: ["--write", "."],
+  },
   git: {
     hooks: {
-      "pre-commit": "basis git staged",
-      "commit-msg": "basis git lint-commit",
+      "pre-commit": "pnpm basis git staged",
+      "commit-msg": "pnpm basis git lint-commit",
     },
     staged: {
       rules: {
-        "*.{ts,tsx,js,jsx}": "basis lint --fix",
-        "*.{json,md,yml,yaml}": "basis fmt --write",
+        "**/*.{ts,tsx,js,jsx}": "basis lint",
+        "**/*.{json,md,yml,yaml}": "basis fmt",
       },
     },
   },

@@ -1,6 +1,6 @@
 {
   "name": "@funish/basis",
-  "version": "0.2.8-edge.2",
+  "version": "0.2.8",
   "description": "A modern development toolkit with unified CLI for package management, versioning, publishing, code quality, and Git workflow automation.",
   "keywords": [
     "basis",
@@ -22,7 +22,8 @@
     "semver",
     "typescript",
     "unjs",
-    "version-management"
+    "version-management",
+    "vite-plus"
   ],
   "homepage": "https://github.com/funish/basis#readme",
   "bugs": {
