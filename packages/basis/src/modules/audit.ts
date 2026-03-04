@@ -1,5 +1,5 @@
 import { stat } from "node:fs/promises";
-import { spawnSync } from "node:child_process";
+import { execSync } from "node:child_process";
 import { consola } from "consola";
 import { detectPackageManager } from "nypm";
 import { glob } from "tinyglobby";
@@ -90,13 +90,13 @@ export async function auditDependencies(
       if (!commands.outdated) {
         consola.info(`Skipping outdated check for ${packageManager}`);
       } else {
-        const result = spawnSync(packageManager, commands.outdated, {
-          cwd,
-          stdio: "inherit",
-          shell: true,
-        });
-        if (result.status !== 0) {
-          // outdated 命令会返回非0退出码表示有过期包
+        try {
+          execSync(`${packageManager} ${commands.outdated.join(" ")}`, {
+            cwd,
+            stdio: "inherit",
+          });
+        } catch {
+          // outdated command returns non-zero exit code when packages are outdated
           consola.warn("Some dependencies are outdated");
         }
       }
@@ -116,13 +116,13 @@ export async function auditDependencies(
       if (!commands.audit) {
         consola.info(`Skipping security audit for ${packageManager}`);
       } else {
-        const result = spawnSync(packageManager, commands.audit, {
-          cwd,
-          stdio: "inherit",
-          shell: true,
-        });
-        if (result.status !== 0) {
-          // audit 命令会返回非0退出码表示有漏洞
+        try {
+          execSync(`${packageManager} ${commands.audit.join(" ")}`, {
+            cwd,
+            stdio: "inherit",
+          });
+        } catch {
+          // audit command returns non-zero exit code when vulnerabilities are found
           hasIssues = true;
         }
       }

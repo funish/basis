@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { execSync } from "node:child_process";
 import { exec } from "dugite";
 import { consola } from "consola";
 import { readPackageJSON } from "pkg-types";
@@ -75,34 +75,18 @@ export async function publishToNpm(options: PublishOptions, config: PublishConfi
   // Publish to primary tag
   const primaryArgs = buildPublishArgs(publishTag);
   const publishArgs = ["publish", ...primaryArgs];
-  const result = spawnSync(packageManager, publishArgs, {
+  execSync(`${packageManager} ${publishArgs.join(" ")}`, {
     stdio: "inherit",
-    shell: true,
   });
-
-  if (result.status !== 0) {
-    consola.error(`Publish failed with exit code ${result.status}`);
-    return;
-  }
 
   // Add additional dist-tag (unless dry run)
   // Note: Always use npm for dist-tag as bun/deno don't support it
   const additionalTag = npmConfig.additionalTag;
   if (!options.dryRun && additionalTag && additionalTag !== publishTag) {
-    const result = spawnSync(
-      "npm",
-      ["dist-tag", "add", `${packageName}@${version}`, additionalTag],
-      {
-        cwd,
-        stdio: "inherit",
-        shell: true,
-      },
-    );
-
-    if (result.status !== 0) {
-      consola.error(`Failed to add dist-tag with exit code ${result.status}`);
-      return;
-    }
+    execSync(`npm dist-tag add ${packageName}@${version} ${additionalTag}`, {
+      cwd,
+      stdio: "inherit",
+    });
   } else if (additionalTag) {
     consola.info(`Skipping dist-tag ${additionalTag} (same as publish tag ${publishTag})`);
   }
