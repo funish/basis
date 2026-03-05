@@ -42,6 +42,8 @@
     "build": "pnpm -r build",
     "lint": "basis lint",
     "fmt": "basis fmt",
+    "bump": "pnpm -r exec basis version",
+    "prerelease": "pnpm -r exec basis version --prerelease",
     "postinstall": "pnpm dev && basis git setup"
   },
   "devDependencies": {

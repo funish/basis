@@ -4,6 +4,7 @@
 
 import type { GitConfig as PKGitConfig } from "pkg-types";
 import type { JitiOptions } from "jiti";
+import type { BuildConfig } from "@funish/build";
 
 // ===============================================
 // Main Configuration Types
@@ -21,6 +22,7 @@ export interface BasisConfig {
   audit?: AuditConfig;
   version?: VersionConfig;
   publish?: PublishConfig;
+  build?: BuildConfig;
 }
 
 // ===============================================

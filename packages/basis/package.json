@@ -1,6 +1,6 @@
 {
   "name": "@funish/basis",
-  "version": "0.2.9-edge.3",
+  "version": "0.2.9",
   "description": "A modern development toolkit with unified CLI for package management, versioning, publishing, code quality, and Git workflow automation.",
   "keywords": [
     "basis",
@@ -70,8 +70,8 @@
     }
   },
   "scripts": {
-    "dev": "isbuild --stub",
-    "build": "isbuild",
+    "dev": "jiti src/cli/basis.ts build --stub",
+    "build": "jiti src/cli/basis.ts build",
     "prepack": "pnpm build"
   },
   "dependencies": {

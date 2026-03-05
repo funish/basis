@@ -93,7 +93,7 @@ export const buildCommand = defineCommand({
     }
 
     const cliOptions: Partial<BuildEntry> = {};
-    if (args.format) cliOptions.format = args.format.split(",") as any;
+    if (args.format) cliOptions.format = args.format.split(",") as BuildEntry["format"];
     if (args.minify !== undefined) cliOptions.minify = args.minify;
     if (args.dts !== undefined) cliOptions.dts = args.dts;
     if (args["out-dir"]) cliOptions.outDir = args["out-dir"];
