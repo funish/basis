@@ -47,19 +47,14 @@ export async function build(config: BuildConfig): Promise<void> {
 
   for (const entry of entries) {
     if (entry.stub) {
+      // Stub mode: expand globs to create individual stub files
       const expandedPaths = await expandGlobs(entry, ctx.pkgDir);
       for (const filePath of expandedPaths) {
         await createJitiStub(ctx, { entry: filePath, stub: true, outDir: entry.outDir });
       }
     } else {
-      // Expand globs for all entries to ensure simple paths are resolved
-      const expandedPaths = await expandGlobs(entry, ctx.pkgDir);
-      // Create a clean entry object with expanded paths, avoiding array merging issues
-      const finalEntry = {
-        ...entry,
-        entry: expandedPaths.length > 0 ? expandedPaths : entry.entry,
-      };
-      await tsdownBuild(defu(finalEntry, DEFAULT_BUILD_OPTIONS));
+      // Build mode: pass entry directly to tsdown (native glob support)
+      await tsdownBuild(defu(entry, DEFAULT_BUILD_OPTIONS));
     }
   }
 

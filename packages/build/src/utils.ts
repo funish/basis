@@ -78,7 +78,7 @@ export async function collectOutDirs(entries: BuildEntry[]): Promise<string[]> {
   return Array.from(outDirs).sort();
 }
 
-export function entryPaths(entry: BuildEntry): Array<string | Record<string, unknown>> {
+export function getEntryPaths(entry: BuildEntry): Array<string | Record<string, unknown>> {
   if (Array.isArray(entry.entry)) {
     return entry.entry;
   } else if (typeof entry.entry === "string") {
@@ -89,20 +89,29 @@ export function entryPaths(entry: BuildEntry): Array<string | Record<string, unk
 }
 
 export async function expandGlobs(entry: BuildEntry, pkgDir: string): Promise<string[]> {
-  const paths = entryPaths(entry);
-  const expandedSet = new Set<string>();
+  const paths = getEntryPaths(entry);
 
-  for (const path of paths) {
-    if (typeof path === "string") {
-      // Use glob directly - no need to manually add extensions
-      // For non-glob paths, use glob pattern to match any extension
-      const patterns = path.includes("*") ? [path] : [`${path}.*`];
-      const files = await glob(patterns, { cwd: pkgDir, absolute: true });
-      for (const f of files) {
-        expandedSet.add(f);
-      }
-    }
+  // Filter to only string paths
+  const stringPaths = paths.filter((p): p is string => typeof p === "string");
+
+  if (stringPaths.length === 0) {
+    return [];
   }
 
-  return Array.from(expandedSet);
+  // Check if any path contains glob patterns
+  const hasGlob = stringPaths.some((path) => path.includes("*"));
+
+  if (hasGlob) {
+    // If any glob pattern exists, expand all paths using glob()
+    const expanded = await glob(stringPaths, {
+      cwd: pkgDir,
+      expandDirectories: false,
+      absolute: true,
+    });
+    return expanded.map((file) => resolve(file));
+  } else {
+    // No glob patterns, use paths directly
+    // tsdown/rolldown will auto-resolve extensions
+    return stringPaths.map((path) => normalizePath(path, pkgDir));
+  }
 }
