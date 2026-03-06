@@ -78,7 +78,6 @@ export const buildCommand = defineCommand({
         configFile: args.config || "basis.config",
         cwd: args.cwd,
       });
-      console.log(basisConfig);
       // If build config is found in BasisConfig, use it
       if (basisConfig?.build) {
         const buildConfig = basisConfig.build;
