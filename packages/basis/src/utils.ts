@@ -1,6 +1,7 @@
 import { loadConfig as _loadConfig, type LoadConfigOptions } from "c12";
 import { findWorkspaceDir } from "pkg-types";
 import { dirname } from "pathe";
+import { defu } from "defu";
 import type { BasisConfig } from "./types";
 
 /**
@@ -9,14 +10,10 @@ import type { BasisConfig } from "./types";
 export async function loadConfig(options: LoadConfigOptions<BasisConfig> = {}) {
   // If user explicitly passed cwd, respect their intent
   if (options.cwd) {
-    return await _loadConfig({
+    return await _loadConfig(defu({}, options, {
       name: "basis",
       cwd: options.cwd,
-      ...options,
-      defaults: {
-        ...options.defaults,
-      },
-    });
+    }));
   }
 
   // No explicit cwd: intelligently search upward
@@ -25,14 +22,10 @@ export async function loadConfig(options: LoadConfigOptions<BasisConfig> = {}) {
 
   // Search upward from current directory to workspace root
   while (true) {
-    const result = await _loadConfig({
+    const result = await _loadConfig(defu({}, options, {
       name: "basis",
       cwd,
-      ...options,
-      defaults: {
-        ...options.defaults,
-      },
-    });
+    }));
 
     // If config file is found (_configFile exists), return it
     if (result._configFile) {

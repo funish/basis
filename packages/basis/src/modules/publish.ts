@@ -3,6 +3,7 @@ import { exec } from "dugite";
 import { consola } from "consola";
 import { readPackageJSON } from "pkg-types";
 import { detectPackageManager } from "nypm";
+import { defu } from "defu";
 import type { PublishConfig, PublishOptions } from "../types";
 
 /**
@@ -27,11 +28,10 @@ export async function publishToNpm(options: PublishOptions, config: PublishConfi
   const packageManager = detected?.name || "npm";
 
   // NPM config with defaults
-  const npmConfig = {
+  const npmConfig = defu(config.npm || {}, {
     tag: "latest",
     access: "public",
-    ...config.npm,
-  };
+  });
 
   let publishTag = options.tag;
   if (!publishTag && version) {
