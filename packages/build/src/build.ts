@@ -1,11 +1,11 @@
-import type { BuildContext, BuildConfig } from "./types";
+import type { BuildContext, BuildConfig, BuildEntry } from "./types";
 
 import { rm } from "node:fs/promises";
 import { consola } from "consola";
 import { build as tsdownBuild } from "tsdown";
-import { createJitiStub } from "./stub";
+import { relative } from "pathe";
+import { buildStub } from "./stub";
 import {
-  fmtPath,
   analyzeDir,
   normalizePath,
   normalizeEntries,
@@ -41,7 +41,7 @@ export async function build(config: BuildConfig): Promise<void> {
 
   const outDirs = await collectOutDirs(entries);
   for (const outDir of outDirs) {
-    consola.info(`Cleaning up \`${fmtPath(outDir)}\``);
+    consola.info(`Cleaning up \`${relative(ctx.pkgDir, outDir).replace(/\\/g, "/")}\``);
     await rm(outDir, { recursive: true, force: true });
   }
 
@@ -50,11 +50,10 @@ export async function build(config: BuildConfig): Promise<void> {
       // Stub mode: expand globs to create individual stub files
       const expandedPaths = await expandGlobs(entry, ctx.pkgDir);
       for (const filePath of expandedPaths) {
-        await createJitiStub(ctx, { entry: filePath, stub: true, outDir: entry.outDir });
+        await buildStub(ctx, { entry: filePath, stub: true, outDir: entry.outDir });
       }
     } else {
-      // Build mode: pass entry directly to tsdown (native glob support)
-      await tsdownBuild(defu(entry, DEFAULT_BUILD_OPTIONS));
+      await buildBundle(ctx, entry);
     }
   }
 
@@ -66,4 +65,11 @@ export async function build(config: BuildConfig): Promise<void> {
   }
 
   consola.success(`isbuild finished in ${Date.now() - start}ms`);
+}
+
+/**
+ * Build using tsdown
+ */
+export async function buildBundle(ctx: BuildContext, entry: BuildEntry): Promise<void> {
+  await tsdownBuild(defu(entry, DEFAULT_BUILD_OPTIONS));
 }

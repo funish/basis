@@ -1,4 +1,4 @@
-import { defineBasisConfig } from "@funish/basis/config";
+import { defineBasisConfig } from "./src/config";
 
 export default defineBasisConfig({
   build: {

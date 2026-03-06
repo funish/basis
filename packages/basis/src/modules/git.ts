@@ -329,7 +329,7 @@ export async function setupGitHooks(cwd = process.cwd()): Promise<boolean> {
   try {
     for (const [hookName, hookCommand] of Object.entries(hooks)) {
       const hookPath = resolve(hooksDir, hookName);
-      const hookContent = `#!/bin/sh\n${hookCommand}\n`;
+      const hookContent = `#!/bin/sh\n${String(hookCommand)}\n`;
 
       await writeFile(hookPath, hookContent, { mode: 0o755 });
       consola.success(`Created ${hookName} hook`);

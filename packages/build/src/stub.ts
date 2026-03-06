@@ -7,7 +7,6 @@ import { consola } from "consola";
 import { colors as c } from "consola/utils";
 import { defu } from "defu";
 import type { BuildContext, BuildEntry } from "./types";
-import { fmtPath } from "./utils";
 
 export const DEFAULT_EXTENSIONS = [".js", ".mjs", ".cjs", ".ts", ".mts", ".cts"];
 
@@ -58,7 +57,7 @@ export interface StubOptions {
   };
 }
 
-export async function createJitiStub(
+export async function buildStub(
   ctx: BuildContext,
   entry: BuildEntry & { stub: true },
   stubOptions?: StubOptions,
@@ -146,7 +145,7 @@ export async function createJitiStub(
 
     await mkdir(dirname(output), { recursive: true });
 
-    consola.info(`${c.magenta("[stub]")} ${fmtPath(output)}`);
+    consola.info(`${c.magenta("[stub]")} ${relative(ctx.pkgDir, output).replace(/\\/g, "/")}`);
 
     // MJS Stub
     // Try to analyze exports

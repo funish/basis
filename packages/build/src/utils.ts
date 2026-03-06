@@ -4,10 +4,6 @@ import { glob } from "tinyglobby";
 import { fileURLToPath } from "mlly";
 import type { BuildEntry } from "./types";
 
-export function fmtPath(path: string): string {
-  return resolve(path).replace(process.cwd(), ".");
-}
-
 export function analyzeDir(dir: string | string[]): { size: number; files: number } {
   if (Array.isArray(dir)) {
     let totalSize = 0;

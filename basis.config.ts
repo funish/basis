@@ -1,4 +1,4 @@
-import { defineBasisConfig } from "@funish/basis/config";
+import { defineBasisConfig } from "./packages/basis/src/config";
 
 export default defineBasisConfig({
   lint: {

@@ -37,6 +37,11 @@
     "type": "git",
     "url": "git+https://github.com/funish/basis.git"
   },
+  "workspaces": [
+    "packages/**",
+    "playground/**",
+    "!**/test/**"
+  ],
   "scripts": {
     "dev": "pnpm -r dev",
     "build": "pnpm -r build",

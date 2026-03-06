@@ -153,7 +153,7 @@ export async function auditDependencies(
             // Check blocked licenses
             if (
               depsConfig.licenses.blocked &&
-              depsConfig.licenses.blocked.some((blocked) => license.includes(blocked))
+              depsConfig.licenses.blocked.some((blocked: string) => license.includes(blocked))
             ) {
               invalidLicenses.push(`${pkg.name}: ${license}`);
               continue;
@@ -161,7 +161,7 @@ export async function auditDependencies(
 
             // Check allowed licenses
             if (depsConfig.licenses.allowed && depsConfig.licenses.allowed.length > 0) {
-              const isAllowed = depsConfig.licenses.allowed.some((allowed) =>
+              const isAllowed = depsConfig.licenses.allowed.some((allowed: string) =>
                 license.includes(allowed),
               );
               if (!isAllowed) {

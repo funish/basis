@@ -1,6 +1,6 @@
 {
   "name": "@funish/build",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Modern build system powered by tsdown (Rolldown + Oxc) with Jiti stub support",
   "keywords": [
     "build",
