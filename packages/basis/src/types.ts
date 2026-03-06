@@ -46,11 +46,20 @@ export interface FmtConfig {
 }
 
 /**
+ * Staged files command type
+ * Can be a string, array of commands, or a function that receives filenames
+ */
+export type StagedCommand =
+  | string // Simple command: "eslint --fix"
+  | string[] // Multiple commands: ["eslint --fix", "prettier --write"]
+  | ((filenames: string[]) => string | string[]); // Function: (files) => `eslint ${files.join(" ")}`;
+
+/**
  * Staged files configuration (lint-staged style)
  */
 export interface StagedConfig {
   /** Commands to run on staged files */
-  rules?: Record<string, string>;
+  rules?: Record<string, StagedCommand>;
 }
 
 /**

@@ -87,83 +87,102 @@ export async function lintStagedFiles(cwd = process.cwd()): Promise<boolean> {
   let hasErrors = false;
   const processedFiles = new Set<string>();
 
-  for (const [pattern, command] of Object.entries(rules)) {
+  for (const [pattern, commandConfig] of Object.entries(rules)) {
     // Match files against pattern
     const isMatch = picomatch(pattern);
     const matchedFiles = files.filter((file) => !processedFiles.has(file) && isMatch(file));
 
     if (matchedFiles.length === 0) continue;
 
-    consola.info(`Running ${command} for ${matchedFiles.length} file(s) matching ${pattern}`);
+    // Resolve commands from StagedCommand type
+    let commands: string[];
+    if (typeof commandConfig === "function") {
+      const result = commandConfig(matchedFiles);
+      commands = Array.isArray(result) ? result : [result];
+    } else if (Array.isArray(commandConfig)) {
+      commands = commandConfig;
+    } else if (commandConfig.includes("{}")) {
+      commands = [commandConfig.replace("{}", matchedFiles.join(" "))];
+    } else {
+      commands = [`${commandConfig} ${matchedFiles.join(" ")}`];
+    }
 
-    try {
-      // Get working directory status before format
-      const beforeStatus = await exec(["status", "--porcelain"], cwd);
-      const beforeModified = new Set<string>();
+    for (const command of commands) {
+      consola.info(`Running ${command} for ${matchedFiles.length} file(s) matching ${pattern}`);
 
-      beforeStatus.stdout
-        .trim()
-        .split("\n")
-        .filter(Boolean)
-        .forEach((line) => {
-          // Git status --porcelain format: "XY filename" where XY are 2-char status code
-          // X can be space for untracked files, so we match any 2 chars (space or non-space)
-          const match = line.match(/^(..)\s+(.+)$/);
-          if (!match) return;
+      try {
+        // Get working directory status before format
+        const beforeStatus = await exec(["status", "--porcelain"], cwd);
+        const beforeModified = new Set<string>();
 
-          const [, status, filePath] = match;
+        beforeStatus.stdout
+          .trim()
+          .split("\n")
+          .filter(Boolean)
+          .forEach((line) => {
+            // Git status --porcelain format: "XY filename" where XY are 2-char status code
+            // X can be space for untracked files, so we match any 2 chars (space or non-space)
+            const match = line.match(/^(..)\s+(.+)$/);
+            if (!match) return;
 
-          // Record files that were already modified in working directory (2nd char is M)
-          if (status[1] === "M" || status === " M") {
-            beforeModified.add(filePath);
-          }
+            const [, status, filePath] = match;
+
+            // Record files that were already modified in working directory (2nd char is M)
+            if (status[1] === "M" || status === " M") {
+              beforeModified.add(filePath);
+            }
+          });
+
+        // Execute the external command
+        execSync(command, {
+          cwd,
+          stdio: "inherit",
         });
 
-      // Execute the external command
-      execSync(command, {
-        cwd,
-        stdio: "inherit",
-      });
+        // Check for newly modified files after format (including indirectly modified ones)
+        const afterStatus = await exec(["status", "--porcelain"], cwd);
+        const filesToStage = new Set<string>();
 
-      // Check for newly modified files after format (including indirectly modified ones)
-      const afterStatus = await exec(["status", "--porcelain"], cwd);
-      const filesToStage = new Set<string>();
+        afterStatus.stdout
+          .trim()
+          .split("\n")
+          .filter(Boolean)
+          .forEach((line) => {
+            // Git status --porcelain format: "XY filename" where XY are 2-char status code
+            // X can be space for untracked files, so we match any 2 chars (space or non-space)
+            const match = line.match(/^(..)\s+(.+)$/);
+            if (!match) return;
 
-      afterStatus.stdout
-        .trim()
-        .split("\n")
-        .filter(Boolean)
-        .forEach((line) => {
-          // Git status --porcelain format: "XY filename" where XY are 2-char status code
-          // X can be space for untracked files, so we match any 2 chars (space or non-space)
-          const match = line.match(/^(..)\s+(.+)$/);
-          if (!match) return;
+            const [, status, filePath] = match;
 
-          const [, status, filePath] = match;
-
-          // Check if working directory file is modified (2nd char is M)
-          if (status[1] === "M" || status === " M") {
-            // If it's a matched file (was staged), always re-stage it
-            if (matchedFiles.includes(filePath)) {
-              filesToStage.add(filePath);
+            // Check if working directory file is modified (2nd char is M)
+            if (status[1] === "M" || status === " M") {
+              // If it's a matched file (was staged), always re-stage it
+              if (matchedFiles.includes(filePath)) {
+                filesToStage.add(filePath);
+              }
+              // If it's NOT a matched file, only stage if it's newly modified (by format tool)
+              else if (!beforeModified.has(filePath)) {
+                filesToStage.add(filePath);
+              }
             }
-            // If it's NOT a matched file, only stage if it's newly modified (by format tool)
-            else if (!beforeModified.has(filePath)) {
-              filesToStage.add(filePath);
-            }
-          }
-        });
+          });
 
-      // Re-stage files
-      if (filesToStage.size > 0) {
-        await exec(["add", ...Array.from(filesToStage)], cwd);
-        consola.info(`Re-staged ${filesToStage.size} file(s) after formatting`);
+        // Re-stage files
+        if (filesToStage.size > 0) {
+          await exec(["add", ...Array.from(filesToStage)], cwd);
+          consola.info(`Re-staged ${filesToStage.size} file(s) after formatting`);
+        }
+      } catch (error) {
+        hasErrors = true;
+        consola.error(`Staged check failed for pattern '${pattern}':`, error);
+        break; // Stop processing remaining commands for this pattern
       }
+    }
 
+    // Only mark as processed if all commands succeeded
+    if (!hasErrors) {
       matchedFiles.forEach((file) => processedFiles.add(file));
-    } catch (error) {
-      hasErrors = true;
-      consola.error(`Staged check failed for pattern '${pattern}':`, error);
     }
   }
 

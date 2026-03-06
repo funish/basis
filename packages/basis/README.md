@@ -176,8 +176,13 @@ export default defineBasisConfig({
     },
     staged: {
       rules: {
-        "*.{ts,tsx,js,jsx}": "basis lint --fix",
-        "*.{json,md,yml,yaml}": "basis fmt --write",
+        // String: filenames auto-appended
+        "*.ts": "basis lint --fix",
+        "*.md": "basis fmt --write",
+        // Array: multiple commands
+        "*.{js,jsx}": ["basis lint --fix", "basis fmt --write"],
+        // Function: full control
+        "*.tsx": (files) => `basis lint --fix ${files.slice(0, 10).join(" ")}`,
       },
     },
   },
