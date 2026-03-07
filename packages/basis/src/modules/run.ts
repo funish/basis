@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 import { dirname, resolve } from "pathe";
-import { spawnSync, type SpawnSyncReturns } from "node:child_process";
+import { spawnSync, type SpawnSyncReturns } from "@funish/process";
 import { consola } from "consola";
 
 export interface RunToolOptions {

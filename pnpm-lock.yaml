@@ -23,6 +23,9 @@ importers:
       '@funish/build':
         specifier: workspace:*
         version: link:../build
+      '@funish/process':
+        specifier: workspace:*
+        version: link:../process
       c12:
         specifier: 4.0.0-beta.3
         version: 4.0.0-beta.3(jiti@2.6.1)
@@ -111,6 +114,12 @@ importers:
       tsdown:
         specifier: 0.20.3
         version: 0.20.3(typescript@5.9.3)(vue-tsc@3.2.5(typescript@5.9.3))
+
+  packages/process:
+    dependencies:
+      std-env:
+        specifier: 4.0.0-rc.1
+        version: 4.0.0-rc.1
 
 packages:
 
@@ -943,6 +952,9 @@ packages:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
 
+  std-env@4.0.0-rc.1:
+    resolution: {integrity: sha512-2gE+MEGsqvDEjl7LqbrCEB3Lo6+Pmt8ULCIsutKTesFBzSuNIkiWPSy65sa7WrlLebc9LcfnS5eyj69mutUp1A==}
+
   streamx@2.23.0:
     resolution: {integrity: sha512-kn+e44esVfn2Fa/O0CPFcex27fjIL6MkVae0Mm6q+E6f0hWv578YCERbv+4m02cjxvDsPKLnmxral/rR6lBMAg==}
 
@@ -1687,6 +1699,8 @@ snapshots:
 
   source-map-js@1.2.1:
     optional: true
+
+  std-env@4.0.0-rc.1: {}
 
   streamx@2.23.0:
     dependencies:

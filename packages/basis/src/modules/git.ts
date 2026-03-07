@@ -1,5 +1,5 @@
 import { readFile, writeFile } from "node:fs/promises";
-import { execSync } from "node:child_process";
+import { execSync } from "@funish/process";
 import { exec, setupEnvironment } from "dugite";
 import { consola } from "consola";
 import picomatch from "picomatch";
@@ -16,7 +16,10 @@ export async function setupGitEnvironment() {
     // Try to find system Git installation directory
     // On Windows with Git for Windows, it's typically at C:/Program Files/Git
     // We can use git --exec-path to find it
-    const gitExecPath = execSync("git --exec-path", { encoding: "utf8" }).trim();
+    const gitExecPath = (execSync("git --exec-path", {
+      stdio: "pipe",
+      encoding: "utf8",
+    }) as string).trim();
 
     if (gitExecPath) {
       // git --exec-path returns something like C:/Program Files/Git/mingw64/libexec/git-core

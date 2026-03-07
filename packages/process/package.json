@@ -1,0 +1,52 @@
+{
+  "name": "@funish/process",
+  "version": "0.0.0",
+  "description": "Cross-platform process execution with intelligent shell detection, like pathe for child_process",
+  "keywords": [
+    "child-process",
+    "cli",
+    "cross-platform",
+    "exec",
+    "execSync",
+    "funish",
+    "process",
+    "shell",
+    "spawn",
+    "std-env",
+    "terminal"
+  ],
+  "homepage": "https://github.com/funish/basis#readme",
+  "bugs": {
+    "url": "https://github.com/funish/basis/issues"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Funish",
+    "email": "official@funish.net",
+    "url": "https://funish.net/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/funish/basis.git",
+    "directory": "packages/process"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "dist/index.mjs",
+  "types": "dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "dev": "isbuild --stub",
+    "build": "isbuild",
+    "prepack": "pnpm build"
+  },
+  "dependencies": {
+    "std-env": "4.0.0-rc.1"
+  }
+}

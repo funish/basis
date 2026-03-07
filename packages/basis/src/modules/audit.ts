@@ -1,5 +1,5 @@
 import { stat } from "node:fs/promises";
-import { execSync } from "node:child_process";
+import { execSync } from "@funish/process";
 import { consola } from "consola";
 import { detectPackageManager } from "nypm";
 import { glob } from "tinyglobby";

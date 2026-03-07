@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+import { execSync } from "@funish/process";
 import { exec } from "dugite";
 import { consola } from "consola";
 import { readPackageJSON } from "pkg-types";
