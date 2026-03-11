@@ -11,7 +11,6 @@
 
 - **[@funish/basis](./packages/basis/README.md)** - Unified CLI toolkit for development workflows: package management, versioning, publishing, code quality, and Git automation
 - **[@funish/build](./packages/build/README.md)** - Modern build system powered by tsdown (Rolldown + Oxc) with Jiti stub support
-- **[@funish/process](./packages/process/README.md)** - Cross-platform process execution with intelligent shell detection for Windows PowerShell
 
 ## Quick Start
 

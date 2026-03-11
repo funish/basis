@@ -1,5 +1,5 @@
 import { stat } from "node:fs/promises";
-import { execSync } from "@funish/process";
+import { execa } from "execa";
 import { consola } from "consola";
 import { detectPackageManager } from "nypm";
 import { glob } from "tinyglobby";
@@ -90,12 +90,12 @@ export async function auditDependencies(
       if (!commands.outdated) {
         consola.info(`Skipping outdated check for ${packageManager}`);
       } else {
-        try {
-          execSync(`${packageManager} ${commands.outdated.join(" ")}`, {
-            cwd,
-            stdio: "inherit",
-          });
-        } catch {
+        const result = await execa(packageManager, commands.outdated, {
+          cwd,
+          stdio: "inherit",
+          reject: false, // Don't throw on non-zero exit code
+        });
+        if (result.exitCode !== 0) {
           // outdated command returns non-zero exit code when packages are outdated
           consola.warn("Some dependencies are outdated");
         }
@@ -116,12 +116,12 @@ export async function auditDependencies(
       if (!commands.audit) {
         consola.info(`Skipping security audit for ${packageManager}`);
       } else {
-        try {
-          execSync(`${packageManager} ${commands.audit.join(" ")}`, {
-            cwd,
-            stdio: "inherit",
-          });
-        } catch {
+        const result = await execa(packageManager, commands.audit, {
+          cwd,
+          stdio: "inherit",
+          reject: false, // Don't throw on non-zero exit code
+        });
+        if (result.exitCode !== 0) {
           // audit command returns non-zero exit code when vulnerabilities are found
           hasIssues = true;
         }

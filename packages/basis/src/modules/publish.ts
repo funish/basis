@@ -1,4 +1,4 @@
-import { execSync } from "@funish/process";
+import { execa } from "execa";
 import { exec } from "dugite";
 import { consola } from "consola";
 import { readPackageJSON } from "pkg-types";
@@ -75,7 +75,7 @@ export async function publishToNpm(options: PublishOptions, config: PublishConfi
   // Publish to primary tag
   const primaryArgs = buildPublishArgs(publishTag);
   const publishArgs = ["publish", ...primaryArgs];
-  execSync(`${packageManager} ${publishArgs.join(" ")}`, {
+  await execa(packageManager, publishArgs, {
     stdio: "inherit",
   });
 
@@ -83,7 +83,7 @@ export async function publishToNpm(options: PublishOptions, config: PublishConfi
   // Note: Always use npm for dist-tag as bun/deno don't support it
   const additionalTag = npmConfig.additionalTag;
   if (!options.dryRun && additionalTag && additionalTag !== publishTag) {
-    execSync(`npm dist-tag add ${packageName}@${version} ${additionalTag}`, {
+    await execa("npm", ["dist-tag", "add", `${packageName}@${version}`, additionalTag], {
       cwd,
       stdio: "inherit",
     });
