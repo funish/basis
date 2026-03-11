@@ -6,6 +6,7 @@ import { createJiti } from "jiti";
 import { consola } from "consola";
 import { colors as c } from "consola/utils";
 import { defu } from "defu";
+import { genImport, genExport, genString } from "knitwork";
 import type { BuildContext, BuildEntry } from "./types";
 
 export const DEFAULT_EXTENSIONS = [".js", ".mjs", ".cjs", ".ts", ".mts", ".cts"];
@@ -145,51 +146,65 @@ export async function buildStub(
 
     await mkdir(dirname(output), { recursive: true });
 
-    consola.info(`${c.magenta("[stub]")} ${relative(ctx.pkgDir, output).replace(/\\/g, "/")}`);
+  consola.info(`${c.magenta("[stub]")} ${relative(ctx.pkgDir, output).replace(/\\/g, "/")}`);
 
-    // MJS Stub
-    // Try to analyze exports
-    const namedExports: string[] = await resolveModuleExportNames(resolvedEntry, {
-      extensions: DEFAULT_EXTENSIONS,
-    }).catch((error) => {
-      consola.warn(
-        `${c.magenta("[stub]")} Cannot analyze exports for ${resolvedEntry}:`,
-        error.message,
-      );
-      return [];
-    });
-    const hasDefaultExport = namedExports.includes("default") || namedExports.length === 0;
-
-    const jitiESMPath = "jiti";
-
-    await writeFile(
-      output,
-      (shebang ? shebang + "\n" : "") +
-        [
-          `import { createJiti } from ${JSON.stringify(jitiESMPath)};`,
-          ...importedBabelPlugins.map(
-            (plugin, i) => `import plugin${i} from ${JSON.stringify(plugin)}`,
-          ),
-          "",
-          `const jiti = createJiti(import.meta.url, ${serializedJitiOptions})`,
-          "",
-          `/** @type {import(${JSON.stringify(resolvedEntryForTypeImport)})} */`,
-          `const _module = await jiti.import(${JSON.stringify(resolvedEntry)});`,
-          hasDefaultExport ? "\nexport default _module?.default ?? _module;" : "",
-          ...namedExports
-            .filter((name) => name !== "default")
-            .map((name) => `export const ${name} = _module.${name};`),
-        ].join("\n"),
+  // MJS Stub
+  // Try to analyze exports
+  const namedExports: string[] = await resolveModuleExportNames(resolvedEntry, {
+    extensions: DEFAULT_EXTENSIONS,
+  }).catch((error) => {
+    consola.warn(
+      `${c.magenta("[stub]")} Cannot analyze exports for ${resolvedEntry}:`,
+      error.message,
     );
+    return [];
+  });
+  const hasDefaultExport = namedExports.includes("default") || namedExports.length === 0;
 
-    // DTS Stub
-    const dtsContent = [
-      `export * from ${JSON.stringify(resolvedEntryForTypeImport)};`,
-      hasDefaultExport
-        ? `export { default } from ${JSON.stringify(resolvedEntryForTypeImport)};`
-        : "",
-    ].join("\n");
-    await writeFile(output.replace(/\.mjs$/, ".d.mts"), dtsContent);
+  const jitiESMPath = "jiti";
+
+  // Generate stub content using knitwork
+  const lines: string[] = [];
+
+  // Imports
+  lines.push(genImport(jitiESMPath, ["createJiti"]));
+  importedBabelPlugins.forEach((plugin, i) => {
+    lines.push(genImport(plugin, [{ name: "default", as: `plugin${i}` }]));
+  });
+
+  // Jiti initialization
+  lines.push("", `const jiti = createJiti(import.meta.url, ${serializedJitiOptions})`, "");
+
+  // Type annotation and module import
+  lines.push(
+    `/** @type {import(${genString(resolvedEntryForTypeImport)})} */`,
+    `const _module = await jiti.import(${genString(resolvedEntry)});`,
+  );
+
+  // Default export
+  if (hasDefaultExport) {
+    lines.push("", "export default _module?.default ?? _module;");
+  }
+
+  // Named exports
+  namedExports
+    .filter((name) => name !== "default")
+    .forEach((name) => {
+      lines.push(`export const ${name} = _module.${name};`);
+    });
+
+  await writeFile(
+    output,
+    (shebang ? shebang + "\n" : "") + lines.join("\n"),
+  );
+
+  // DTS Stub
+  const dtsLines: string[] = [];
+  dtsLines.push(genExport(resolvedEntryForTypeImport, [{ name: "*", as: "" }]));
+  if (hasDefaultExport) {
+    dtsLines.push(genExport(resolvedEntryForTypeImport, [{ name: "default", as: "default" }]));
+  }
+  await writeFile(output.replace(/\.mjs$/, ".d.mts"), dtsLines.join("\n"));
 
     if (shebang) {
       await makeExecutable(output);
