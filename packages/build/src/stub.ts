@@ -200,7 +200,8 @@ export async function buildStub(
 
   // DTS Stub
   const dtsLines: string[] = [];
-  dtsLines.push(genExport(resolvedEntryForTypeImport, [{ name: "*", as: "" }]));
+  // genExport with array produces export { * } which is invalid, use export * instead
+  dtsLines.push(`export * from ${genString(resolvedEntryForTypeImport)};`);
   if (hasDefaultExport) {
     dtsLines.push(genExport(resolvedEntryForTypeImport, [{ name: "default", as: "default" }]));
   }
