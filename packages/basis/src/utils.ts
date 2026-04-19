@@ -10,10 +10,12 @@ import type { BasisConfig } from "./types";
 export async function loadConfig(options: LoadConfigOptions<BasisConfig> = {}) {
   // If user explicitly passed cwd, respect their intent
   if (options.cwd) {
-    return await _loadConfig(defu({}, options, {
-      name: "basis",
-      cwd: options.cwd,
-    }));
+    return await _loadConfig(
+      defu({}, options, {
+        name: "basis",
+        cwd: options.cwd,
+      }),
+    );
   }
 
   // No explicit cwd: intelligently search upward
@@ -22,10 +24,12 @@ export async function loadConfig(options: LoadConfigOptions<BasisConfig> = {}) {
 
   // Search upward from current directory to workspace root
   while (true) {
-    const result = await _loadConfig(defu({}, options, {
-      name: "basis",
-      cwd,
-    }));
+    const result = await _loadConfig(
+      defu({}, options, {
+        name: "basis",
+        cwd,
+      }),
+    );
 
     // If config file is found (_configFile exists), return it
     if (result._configFile) {

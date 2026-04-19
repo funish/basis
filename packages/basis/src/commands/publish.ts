@@ -46,7 +46,6 @@ export const publishCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
 
       // Publish to npm
       await publishToNpm(options, config.publish || {});
-      consola.success("Package published successfully");
 
       // Git operations if requested
       if (args.git && config.publish?.git) {

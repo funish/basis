@@ -5,13 +5,7 @@ import { consola } from "consola";
 import { build as tsdownBuild } from "tsdown";
 import { relative } from "pathe";
 import { buildStub } from "./stub";
-import {
-  analyzeDir,
-  normalizePath,
-  normalizeEntries,
-  collectOutDirs,
-  expandGlobs,
-} from "./utils";
+import { analyzeDir, normalizePath, normalizeEntries, collectOutDirs, expandGlobs } from "./utils";
 import { readPackageJSON } from "pkg-types";
 import prettyBytes from "pretty-bytes";
 import { defu } from "defu";

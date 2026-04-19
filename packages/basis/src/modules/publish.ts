@@ -78,6 +78,7 @@ export async function publishToNpm(options: PublishOptions, config: PublishConfi
   await execa(packageManager, publishArgs, {
     stdio: "inherit",
   });
+  consola.success(`Published ${packageName}@${version} with tag ${publishTag}`);
 
   // Add additional dist-tag (unless dry run)
   // Note: Always use npm for dist-tag as bun/deno don't support it

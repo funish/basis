@@ -106,7 +106,8 @@ export async function lintStagedFiles(cwd = process.cwd()): Promise<boolean> {
     } else if (commandConfig.includes("{}")) {
       commands = [commandConfig.replace("{}", matchedFiles.join(" "))];
     } else {
-      commands = [`${commandConfig} ${matchedFiles.join(" ")}`];
+      // No placeholder — run the command as-is without appending files
+      commands = [commandConfig];
     }
 
     for (const command of commands) {

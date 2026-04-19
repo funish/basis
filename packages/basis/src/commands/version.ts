@@ -100,7 +100,8 @@ export const versionCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
         version: newVersion,
       });
 
-      consola.success(`Version updated: ${oldVersion} → ${newVersion}`);
+      const packageName = packageJson.name || "unknown";
+      consola.success(`${packageName} ${oldVersion} → ${newVersion}`);
     } catch (error) {
       consola.error("Version update failed:", error);
       process.exit(1);
