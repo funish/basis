@@ -1,5 +1,6 @@
 import { defineCommand, type CommandDef, type ArgsDef } from "citty";
 import { consola } from "consola";
+
 import { auditDependencies, auditStructure, auditAll } from "../modules/audit";
 
 export const auditCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({

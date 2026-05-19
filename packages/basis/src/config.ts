@@ -8,5 +8,3 @@ export type { BasisConfig };
 export function defineBasisConfig(config: BasisConfig): BasisConfig {
   return config;
 }
-
-export { defineBuildConfig } from "@funish/build/config";

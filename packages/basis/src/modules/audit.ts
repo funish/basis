@@ -1,10 +1,12 @@
 import { stat } from "node:fs/promises";
-import { execa } from "execa";
+
 import { consola } from "consola";
+import { execa } from "execa";
 import { detectPackageManager } from "nypm";
-import { glob } from "tinyglobby";
-import { readPackageJSON, resolvePackageJSON } from "pkg-types";
 import { resolve } from "pathe";
+import { readPackageJSON, resolvePackageJSON } from "pkg-types";
+import { glob } from "tinyglobby";
+
 import type { AuditConfig } from "../types";
 import { loadConfig } from "../utils";
 

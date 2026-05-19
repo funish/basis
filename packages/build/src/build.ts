@@ -1,14 +1,15 @@
-import type { BuildContext, BuildConfig, BuildEntry } from "./types";
-
 import { rm } from "node:fs/promises";
+
 import { consola } from "consola";
-import { build as tsdownBuild } from "tsdown";
+import { defu } from "defu";
 import { relative } from "pathe";
-import { buildStub } from "./stub";
-import { analyzeDir, normalizePath, normalizeEntries, collectOutDirs, expandGlobs } from "./utils";
 import { readPackageJSON } from "pkg-types";
 import prettyBytes from "pretty-bytes";
-import { defu } from "defu";
+import { build as tsdownBuild } from "tsdown";
+
+import { buildStub } from "./stub";
+import type { BuildContext, BuildConfig, BuildEntry } from "./types";
+import { analyzeDir, normalizePath, normalizeEntries, collectOutDirs, expandGlobs } from "./utils";
 
 export const DEFAULT_BUILD_OPTIONS = {
   outputOptions: {

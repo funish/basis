@@ -1,7 +1,9 @@
 import { readdirSync, statSync } from "node:fs";
+
+import { fileURLToPath } from "mlly";
 import { isAbsolute, join, resolve } from "pathe";
 import { glob } from "tinyglobby";
-import { fileURLToPath } from "mlly";
+
 import type { BuildEntry } from "./types";
 
 export function analyzeDir(dir: string | string[]): { size: number; files: number } {

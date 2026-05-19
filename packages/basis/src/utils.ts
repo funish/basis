@@ -1,7 +1,8 @@
 import { loadConfig as _loadConfig, type LoadConfigOptions } from "c12";
-import { findWorkspaceDir } from "pkg-types";
-import { dirname } from "pathe";
 import { defu } from "defu";
+import { dirname } from "pathe";
+import { findWorkspaceDir } from "pkg-types";
+
 import type { BasisConfig } from "./types";
 
 /**

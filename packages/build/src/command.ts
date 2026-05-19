@@ -1,8 +1,8 @@
+import { loadConfig } from "c12";
 import { defineCommand } from "citty";
 import { consola } from "consola";
-import { readPackageJSON } from "pkg-types";
-import { loadConfig } from "c12";
 import { defu } from "defu";
+import { readPackageJSON } from "pkg-types";
 
 import { build } from "./build";
 import type { BuildConfig, BuildEntry } from "./types";
@@ -80,6 +80,26 @@ export const buildCommand = defineCommand({
 
       if (config?.entries) {
         entries = config.entries;
+      } else {
+        // Fallback: read pack config from vite.config.ts
+        const { config: viteConfig } = await loadConfig({
+          name: "vite",
+          cwd: args.cwd,
+        });
+
+        const pack = viteConfig?.pack;
+        if (pack) {
+          const packs = Array.isArray(pack) ? pack : [pack];
+          entries = packs
+            .filter((p: any) => p.entry)
+            .map((p: any) => ({
+              entry: p.entry,
+              outDir: p.outDir,
+              minify: p.minify,
+              dts: p.dts,
+              format: p.format,
+            }));
+        }
       }
     }
 

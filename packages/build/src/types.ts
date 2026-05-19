@@ -1,5 +1,5 @@
-import type { InlineConfig } from "tsdown";
 import type { PackageJson } from "pkg-types";
+import type { InlineConfig } from "tsdown";
 
 export interface BuildContext {
   pkgDir: string;

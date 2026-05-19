@@ -3,5 +3,4 @@ packages:
   - playground/**
   - "!**/test/**"
 
-onlyBuiltDependencies:
-  - dugite
+onlyBuiltDependencies: []

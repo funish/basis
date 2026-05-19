@@ -2,26 +2,21 @@
   "name": "basis-monorepo",
   "version": "0.0.0",
   "private": true,
-  "description": "Monorepo for @funish/basis - A unified development toolkit with CLI, package management, versioning, publishing, linting, and git hooks.",
+  "description": "Monorepo for @funish/basis — Release workflow companion for Vite+",
   "keywords": [
     "basis",
-    "citty",
-    "cli",
-    "code-quality",
+    "commit-lint",
     "developer-experience",
     "development-toolkit",
-    "git-hooks",
     "javascript",
-    "linting",
-    "modern-development",
     "monorepo",
-    "nypm",
-    "package-management",
-    "publishing",
+    "npm-publish",
+    "semantic-versioning",
     "semver",
+    "stub",
     "typescript",
-    "unjs",
-    "version-management"
+    "version-management",
+    "vite-plus"
   ],
   "homepage": "https://github.com/funish/basis#readme",
   "bugs": {
@@ -41,16 +36,16 @@
   "scripts": {
     "dev": "pnpm -r dev",
     "build": "pnpm -r build",
-    "lint": "basis lint",
-    "fmt": "basis fmt",
+    "check": "vp check --fix",
     "bump": "pnpm -r exec basis version",
     "prerelease": "pnpm -r exec basis version --prerelease",
-    "postinstall": "pnpm dev && basis git setup"
+    "postinstall": "pnpm dev && vp config && basis git setup"
   },
   "devDependencies": {
     "@funish/basis": "workspace:*",
     "@funish/build": "workspace:*",
-    "@types/node": "25.6.0"
+    "@types/node": "25.9.0",
+    "vite-plus": "0.1.21"
   },
   "packageManager": "pnpm@10.30.3+sha512.c961d1e0a2d8e354ecaa5166b822516668b7f44cb5bd95122d590dd81922f606f5473b6d23ec4a5be05e7fcd18e8488d47d978bbe981872f1145d06e9a740017"
 }

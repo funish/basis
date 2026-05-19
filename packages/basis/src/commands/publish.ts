@@ -1,9 +1,10 @@
 import { defineCommand, type CommandDef, type ArgsDef } from "citty";
 import { consola } from "consola";
 import { readPackageJSON } from "pkg-types";
-import { loadConfig } from "../utils";
+
 import { publishToNpm, publishGitOperations } from "../modules/publish";
 import type { PublishOptions } from "../types";
+import { loadConfig } from "../utils";
 
 export const publishCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
   meta: {
@@ -35,6 +36,7 @@ export const publishCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
   async run({ args }) {
     try {
       const { config } = await loadConfig();
+      const releaseConfig = config.release || {};
 
       const options: PublishOptions = {
         tag: args.tag,
@@ -45,17 +47,17 @@ export const publishCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
       };
 
       // Publish to npm
-      await publishToNpm(options, config.publish || {});
+      await publishToNpm(options, releaseConfig);
 
       // Git operations if requested
-      if (args.git && config.publish?.git) {
+      if (args.git && releaseConfig.git) {
         consola.info("Creating git tag and commit...");
 
         const packageJson = await readPackageJSON(process.cwd());
         const version = packageJson.version;
 
         if (version) {
-          await publishGitOperations(version, config.publish.git);
+          await publishGitOperations(version, releaseConfig.git);
           consola.success("Git operations completed");
         }
       }

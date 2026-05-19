@@ -1,18 +1,21 @@
+import { build } from "@funish/build";
+import type { BuildEntry } from "@funish/build";
+import { loadConfig as loadConfigC12 } from "c12";
 import { defineCommand } from "citty";
 import { consola } from "consola";
 import { readPackageJSON } from "pkg-types";
-import { loadConfig as _loadConfig } from "c12";
-import { defu } from "defu";
-import { loadConfig } from "../utils";
-import { build } from "@funish/build";
-import type { BuildConfig, BuildEntry } from "@funish/build";
 
 const packageJson = await readPackageJSON(import.meta.url);
+
+interface PackConfig {
+  entry?: BuildEntry["entry"];
+  outDir?: string;
+}
 
 export const buildCommand = defineCommand({
   meta: {
     name: "build",
-    description: "Build project using @funish/build",
+    description: "Build project (use --stub for development, vp pack for production)",
     version: packageJson.version,
   },
   args: {
@@ -28,40 +31,7 @@ export const buildCommand = defineCommand({
     },
     stub: {
       type: "boolean",
-      description: "Generate stub files",
-    },
-    format: {
-      type: "string",
-      description: "Output format: esm, cjs, iife, umd",
-    },
-    minify: {
-      type: "boolean",
-      description: "Minify output",
-    },
-    dts: {
-      type: "boolean",
-      description: "Generate type declarations",
-    },
-    "out-dir": {
-      type: "string",
-      description: "Output directory",
-    },
-    clean: {
-      type: "boolean",
-      description: "Clean output directory before build",
-      default: true,
-    },
-    external: {
-      type: "string",
-      description: "External dependencies (comma-separated)",
-    },
-    watch: {
-      type: "boolean",
-      description: "Watch mode",
-    },
-    config: {
-      type: "string",
-      description: "Path to config file",
+      description: "Generate stub files for development",
     },
     "no-config": {
       type: "boolean",
@@ -69,74 +39,47 @@ export const buildCommand = defineCommand({
     },
   },
   async run({ args }) {
-    let entries: (string | BuildEntry)[] = [];
-    let hooks = undefined;
+    let entries: BuildEntry[] = [];
 
-    // Try to load from BasisConfig first
     if (!args["no-config"]) {
-      const { config: basisConfig } = await loadConfig({
-        configFile: args.config || "basis.config",
+      // Read pack config from vite.config.ts
+      const { config } = await loadConfigC12({
+        name: "vite",
         cwd: args.cwd,
       });
-      // If build config is found in BasisConfig, use it
-      if (basisConfig?.build) {
-        const buildConfig = basisConfig.build;
-        if (buildConfig.entries) {
-          entries = buildConfig.entries;
-        }
-        if (buildConfig.hooks) {
-          hooks = buildConfig.hooks;
-        }
-      } else {
-        // Fallback to standalone build.config.ts
-        const { config } = await _loadConfig<BuildConfig>({
-          name: "isbuild",
-          configFile: args.config || "build.config",
-          cwd: args.cwd,
-        });
 
-        if (config?.entries) {
-          entries = config.entries;
-        }
-        if (config?.hooks) {
-          hooks = config.hooks;
-        }
+      const pack = config?.pack as PackConfig | PackConfig[] | undefined;
+
+      if (pack) {
+        const packs = Array.isArray(pack) ? pack : [pack];
+        entries = packs
+          .filter((p) => p.entry)
+          .map((p) => ({
+            entry: p.entry!,
+            outDir: p.outDir,
+            stub: args.stub,
+          }));
       }
     }
 
     // CLI arguments override config
     if (args._.length > 0) {
-      entries = args._.map((entry) => {
-        if (typeof entry === "string") {
-          return { entry };
-        }
-        return entry;
-      });
+      entries = args._.map((entry) => ({
+        entry,
+        stub: args.stub,
+      }));
     }
 
-    const cliOptions: Partial<BuildEntry> = {};
-    if (args.format) cliOptions.format = args.format.split(",") as BuildEntry["format"];
-    if (args.minify !== undefined) cliOptions.minify = args.minify;
-    if (args.dts !== undefined) cliOptions.dts = args.dts;
-    if (args["out-dir"]) cliOptions.outDir = args["out-dir"];
-    if (args.external) cliOptions.external = args.external.split(",");
-
-    const finalEntries = entries.map((entry) => {
-      if (typeof entry === "string") {
-        return defu({ entry, stub: args.stub }, cliOptions) as BuildEntry;
-      }
-      return defu(entry, { stub: args.stub }, cliOptions) as BuildEntry;
-    });
-
-    if (finalEntries.length === 0) {
-      consola.error("No entry files specified. Provide entries via args or config file.");
+    if (entries.length === 0) {
+      consola.error(
+        "No entry files specified. Configure pack.entry in vite.config.ts or provide entries via args.",
+      );
       process.exit(1);
     }
 
     await build({
       cwd: args.cwd,
-      entries: finalEntries,
-      hooks,
+      entries,
     });
   },
 });

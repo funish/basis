@@ -1,9 +1,10 @@
 import { defineCommand, type CommandDef, type ArgsDef } from "citty";
 import { consola } from "consola";
 import { readPackageJSON, writePackageJSON, resolvePackageJSON } from "pkg-types";
-import { loadConfig } from "../utils";
+
 import { calculateNewVersion } from "../modules/version";
 import type { VersionOptions } from "../types";
+import { loadConfig } from "../utils";
 
 export const versionCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
   meta: {
@@ -77,7 +78,6 @@ export const versionCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
         ];
 
         if (versionComponents.includes(versionArg)) {
-          // Type assertion: versionArg is guaranteed to be a valid key
           (options as Record<string, unknown>)[versionArg] = true;
         } else {
           options.version = versionArg;
@@ -92,7 +92,8 @@ export const versionCommand: CommandDef<ArgsDef> = defineCommand<ArgsDef>({
         throw new Error("No version found in package.json");
       }
 
-      const newVersion = calculateNewVersion(oldVersion, options, config.version || {});
+      const releaseConfig = config.release || {};
+      const newVersion = calculateNewVersion(oldVersion, options, releaseConfig);
 
       const packageJsonPath = await resolvePackageJSON(cwd);
       await writePackageJSON(packageJsonPath, {

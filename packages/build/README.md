@@ -9,9 +9,9 @@
 
 ## What is @funish/build?
 
-@funish/build is a **zero-config build system** designed for modern TypeScript/JavaScript projects. It leverages [tsdown](https://tsdown.dev) for ultra-fast bundling and [Jiti](https://github.com/unjs/jiti) for development stub generation.
+@funish/build is a **build system** designed for modern TypeScript/JavaScript projects. It leverages [tsdown](https://tsdown.dev) for ultra-fast bundling and [Jiti](https://github.com/unjs/jiti) for development stub generation.
 
-**Inspired by**: This project is inspired by [unbuild](https://github.com/unjs/unbuild) and adopts the stub implementation pattern with modern tooling.
+**Inspired by**: [unbuild](https://github.com/unjs/unbuild), with modern tooling (Rolldown + Oxc).
 
 ## Features
 
@@ -24,7 +24,6 @@
 - 🎯 **TypeScript First**: Full TypeScript support with automatic type declarations
 - 📝 **Jiti Integration**: Runtime TypeScript execution for stub mode
 - 🔄 **CITTY Compatible**: CLI framework integration for easy automation
-- 🎨 **Shebang Support**: Automatic executable handling for CLI tools
 - 🌍 **Multi-format Output**: Support for ESM, CJS, IIFE, and UMD
 
 ## Quick Start
@@ -74,7 +73,7 @@ Options:
 
 ## Configuration
 
-Create `build.config.ts` in your project root:
+### Using `build.config.ts`
 
 ```typescript
 import { defineBuildConfig } from "@funish/build/config";
@@ -93,36 +92,45 @@ export default defineBuildConfig({
 });
 ```
 
+### Using `vite.config.ts` (Fallback)
+
+When no `build.config.ts` is found, @funish/build automatically reads `pack` config from `vite.config.ts`:
+
+```typescript
+import { defineConfig } from "vite-plus";
+
+export default defineConfig({
+  pack: {
+    entry: ["src/index.ts", "src/cli/**/*"],
+    minify: true,
+  },
+});
+```
+
+This enables seamless integration with Vite+ — use `vp pack` for production builds and `isbuild --stub` (or `basis build --stub`) for development stubs, all from the same configuration.
+
 See [tsdown documentation](https://tsdown.dev) for all available options.
 
 ## Stub Mode
 
 Generate lightweight development stubs with Jiti for fast iteration:
 
-```typescript
-import { defineBuildConfig } from "@funish/build/config";
+```bash
+# Via isbuild CLI
+isbuild --stub
 
-export default defineBuildConfig({
-  entries: [
-    {
-      entry: "src/commands/**/*",
-      stub: true,
-      outDir: "dist/commands/",
-    },
-  ],
-});
+# Via basis CLI (reads pack.entry from vite.config.ts)
+basis build --stub
 ```
 
-Use `isbuild --stub` to generate stubs that load source files at runtime using Jiti.
+Stub files use Jiti to load source TypeScript files at runtime, eliminating the need to rebuild during development.
 
 ## Integration with Basis CLI
 
 @funish/build integrates seamlessly with [@funish/basis](https://github.com/funish/basis):
 
 ```bash
-basis build
-basis build --stub
-basis build src/index.ts --minify
+basis build --stub           # Generate stubs from vite.config.ts pack config
 ```
 
 ## API

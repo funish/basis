@@ -1,5 +1,6 @@
 import semver from "semver";
-import type { VersionConfig, VersionOptions } from "../types";
+
+import type { ReleaseConfig, VersionOptions } from "../types";
 
 /**
  * Calculate new version based on options
@@ -7,7 +8,7 @@ import type { VersionConfig, VersionOptions } from "../types";
 export function calculateNewVersion(
   oldVersion: string,
   options: VersionOptions,
-  config: VersionConfig,
+  config: ReleaseConfig,
 ): string {
   if (options.version) {
     if (semver.valid(options.version)) {

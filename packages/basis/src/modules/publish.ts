@@ -1,15 +1,15 @@
-import { execa } from "execa";
-import { exec } from "dugite";
 import { consola } from "consola";
-import { readPackageJSON } from "pkg-types";
-import { detectPackageManager } from "nypm";
 import { defu } from "defu";
-import type { PublishConfig, PublishOptions } from "../types";
+import { execa } from "execa";
+import { detectPackageManager } from "nypm";
+import { readPackageJSON } from "pkg-types";
+
+import type { ReleaseConfig, PublishOptions } from "../types";
 
 /**
  * Publish package to npm registry
  */
-export async function publishToNpm(options: PublishOptions, config: PublishConfig): Promise<void> {
+export async function publishToNpm(options: PublishOptions, config: ReleaseConfig): Promise<void> {
   const cwd = process.cwd();
   const packageJson = await readPackageJSON(cwd);
   const version = packageJson.version;
@@ -80,8 +80,7 @@ export async function publishToNpm(options: PublishOptions, config: PublishConfi
   });
   consola.success(`Published ${packageName}@${version} with tag ${publishTag}`);
 
-  // Add additional dist-tag (unless dry run)
-  // Note: Always use npm for dist-tag as bun/deno don't support it
+  // Add additional dist-tag
   const additionalTag = npmConfig.additionalTag;
   if (!options.dryRun && additionalTag && additionalTag !== publishTag) {
     await execa("npm", ["dist-tag", "add", `${packageName}@${version}`, additionalTag], {
@@ -98,14 +97,13 @@ export async function publishToNpm(options: PublishOptions, config: PublishConfi
  */
 export async function publishGitOperations(
   version: string,
-  gitConfig?: PublishConfig["git"],
+  gitConfig?: ReleaseConfig["git"],
 ): Promise<void> {
   const cwd = process.cwd();
 
-  // Apply defaults from config.ts
   const tagPrefix = gitConfig?.tagPrefix;
   if (!tagPrefix) {
-    throw new Error("Git tagPrefix is required");
+    throw new Error("Git tagPrefix is required in release.git config");
   }
 
   const tagName = `${tagPrefix}${version}`;
@@ -115,17 +113,16 @@ export async function publishGitOperations(
     : `chore: release ${tagName}`;
 
   // Add and commit
-  await exec(["add", "package.json"], cwd);
-
-  await exec(["commit", "-m", commitMessage], cwd);
+  await execa("git", ["add", "package.json"], { cwd });
+  await execa("git", ["commit", "-m", commitMessage], { cwd });
 
   // Create tag
   const tagArgs = ["tag", tagName, ...(gitConfig?.signTag ? ["--sign"] : [])];
-  await exec(tagArgs, cwd);
+  await execa("git", tagArgs, { cwd });
 
   // Push if configured
   if (gitConfig?.push) {
-    await exec(["push"], cwd);
-    await exec(["push", "--tags"], cwd);
+    await execa("git", ["push"], { cwd });
+    await execa("git", ["push", "--tags"], { cwd });
   }
 }

@@ -2,6 +2,7 @@
 
 import { runMain } from "citty";
 import { consola } from "consola";
+
 import { buildCommand } from "./command";
 
 runMain(buildCommand).catch((error) => {
